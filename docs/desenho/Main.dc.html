@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Item na barra de menus</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#F2CC7A}a:hover{color:#FFE2A3}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1080px; box-sizing: border-box; padding: 56px 64px; background: #13100C; color: #F5F5F5; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 32px;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 40px;">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #E0B357;">Barra de menus</div>
+      <h1 style="margin: 0; font-size: 40px; font-weight: 700; letter-spacing: -0.02em;">Quanto a bateria gasta por hora, sempre à vista</h1>
+      <p style="margin: 0; font-size: 17px; color: rgba(255,255,255,0.68); max-width: 760px;">Escolha ícone, valor ou os dois. Descarregando o sinal é −, carregando é +. Desenhado em 1,5× para dar para ler; na barra real o texto tem 13 px e segue a cor do sistema.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px; padding: 14px 18px; border-radius: 12px; background: rgba(255,255,255,0.06); max-width: 300px;">
+      <div style="font-size: 13px; font-weight: 600; color: #F2CC7A;">No lugar do iStat</div>
+      <div style="font-size: 14px; color: rgba(255,255,255,0.72); line-height: 1.4;">Desligue o item de bateria no iStat Menus e deixe este no lugar. O app não mexe no iStat.</div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 220px repeat(4, minmax(0, 1fr)); gap: 12px 16px; align-items: center;">
+    <div></div>
+    <sc-for list="{{states}}" as="st" hint-placeholder-count="4">
+      <div style="display: flex; flex-direction: column; gap: 2px; padding-bottom: 6px;">
+        <div style="font-size: 15px; font-weight: 600;">{{st.name}}</div>
+        <div style="font-size: 13px; color: rgba(255,255,255,0.6);">{{st.desc}}</div>
+      </div>
+    </sc-for>
+
+    <sc-for list="{{modes}}" as="mode" hint-placeholder-count="5">
+      <div style="display: flex; flex-direction: column; gap: 4px; padding-right: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="font-size: 17px; font-weight: 600;">{{mode.name}}</div>
+          <sc-if value="{{mode.default}}" hint-placeholder-val="{{false}}">
+            <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #1F1505; background: linear-gradient(#F2CC7A, #BD8A33); border-radius: 999px; padding: 3px 8px;">Padrão</span>
+          </sc-if>
+        </div>
+        <div style="font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.35;">{{mode.desc}}</div>
+      </div>
+      <sc-for list="{{mode.cells}}" as="cell" hint-placeholder-count="4">
+        <div style="height: 84px; border-radius: 14px; background: linear-gradient(135deg, #5A1E1C, #7A2A26); display: flex; align-items: flex-start; justify-content: flex-end; overflow: hidden;">
+          <div style="width: 100%; height: 48px; background: rgba(28,18,16,0.55); display: flex; align-items: center; justify-content: flex-end; gap: 14px; padding: 0 16px; box-sizing: border-box; color: rgba(255,255,255,0.55); font-size: 17px; font-weight: 600;">
+            <span>13/11</span>
+            <div style="display: flex; align-items: center; gap: 7px; padding: 5px 9px; border-radius: 8px; background: rgba(255,255,255,0.16); color: {{cell.color}};">
+              <sc-if value="{{cell.bat}}" hint-placeholder-val="{{true}}">
+                <svg width="36" height="18" viewBox="0 0 30 15" aria-hidden="true"><rect x="0.75" y="0.75" width="25" height="13.5" rx="3.6" fill="none" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.5"></rect><rect x="27" y="5" width="2" height="5" rx="1" fill="currentColor" fill-opacity="0.55"></rect><rect x="2.75" y="2.75" width="{{cell.fill}}" height="9.5" rx="1.8" fill="currentColor"></rect></svg>
+              </sc-if>
+              <sc-if value="{{cell.gauge}}" hint-placeholder-val="{{false}}">
+                <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 18 A8.5 8.5 0 1 1 20.5 18" fill="none" stroke="currentColor" stroke-opacity="0.55" stroke-width="2" stroke-linecap="round"></path><line x1="12" y1="18" x2="{{cell.nx}}" y2="{{cell.ny}}" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></line><circle cx="12" cy="18" r="2" fill="currentColor"></circle></svg>
+              </sc-if>
+              <sc-if value="{{cell.down}}" hint-placeholder-val="{{false}}">
+                <svg width="14" height="18" viewBox="0 0 10 14" aria-hidden="true"><path d="M5 1.5v10M1.5 8l3.5 3.8L8.5 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              </sc-if>
+              <sc-if value="{{cell.bolt}}" hint-placeholder-val="{{false}}">
+                <svg width="14" height="20" viewBox="0 0 10 14" aria-hidden="true"><path d="M6 0.8 1.2 7.8h3.4L3.8 13.2 8.8 6.2H5.4z" fill="currentColor"></path></svg>
+              </sc-if>
+              <sc-if value="{{cell.plug}}" hint-placeholder-val="{{false}}">
+                <svg width="16" height="20" viewBox="0 0 12 16" aria-hidden="true"><path d="M3.5 1v3.5M8.5 1v3.5M2 4.5h8v3a4 4 0 0 1-8 0zM6 11.5V15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              </sc-if>
+              <sc-if value="{{cell.one}}" hint-placeholder-val="{{true}}">
+                <span style="font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap;">{{cell.text}}</span>
+              </sc-if>
+              <sc-if value="{{cell.stack}}" hint-placeholder-val="{{false}}">
+                <div style="display: flex; align-items: center; gap: 7px; font-variant-numeric: tabular-nums; white-space: nowrap;">
+                  <span style="font-size: 24px; font-weight: 600; letter-spacing: -0.01em;">{{cell.big}}</span>
+                  <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                    <span style="font-size: 12px; font-weight: 700; line-height: 1;">{{cell.small}}</span>
+                    <svg width="27" height="13" viewBox="0 0 30 15" aria-hidden="true"><rect x="0.75" y="0.75" width="25" height="13.5" rx="3.6" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.5"></rect><rect x="27" y="5" width="2" height="5" rx="1" fill="currentColor" fill-opacity="0.6"></rect><rect x="2.75" y="2.75" width="{{cell.fill}}" height="9.5" rx="1.8" fill="currentColor"></rect></svg>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{cell.two}}" hint-placeholder-val="{{false}}">
+                <div style="display: flex; flex-direction: column; line-height: 1.05; font-variant-numeric: tabular-nums; white-space: nowrap;">
+                  <span style="font-size: 15px; font-weight: 700;">{{cell.top}}</span>
+                  <span style="font-size: 13px; font-weight: 500; opacity: 0.85;">{{cell.bottom}}</span>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </sc-for>
+  </div>
+
+  <div style="display: flex; gap: 16px; align-items: stretch;">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; border-radius: 12px; background: rgba(255,255,255,0.06);">
+      <div style="font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.6);">Clique</div>
+      <div style="font-size: 15px; line-height: 1.4;">Abre o painel com entrada e saída de energia, tempo para encher ou acabar, gráfico e os apps que mais gastam.</div>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; border-radius: 12px; background: rgba(255,255,255,0.06);">
+      <div style="font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.6);">Clique com o botão direito</div>
+      <div style="font-size: 15px; line-height: 1.4;">Troca rápido o que aparece na barra (ícone, valor, os dois) sem abrir as preferências.</div>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; border-radius: 12px; background: rgba(255,255,255,0.06);">
+      <div style="font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #FFB340;">Consumo alto</div>
+      <div style="font-size: 15px; line-height: 1.4;">Acima do limite que você escolher (padrão 20 %/h), o item fica laranja e pode avisar com notificação.</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const W = 'rgba(255,255,255,0.95)', HOT = '#FF9F0A';
+    const fill = (p) => Math.max(2, Math.round(21.5 * p) / 1);
+    const needle = (rate) => { const t = Math.PI * Math.min(rate, 30) / 30; return { nx: (12 - 6.5 * Math.cos(t)).toFixed(1), ny: (18 - 6.5 * Math.sin(t)).toFixed(1) }; };
+    const base = { bat: false, gauge: false, down: false, bolt: false, plug: false, one: false, two: false, stack: false, color: W, fill: 0, nx: 12, ny: 12, text: '', top: '', bottom: '', big: '', small: '' };
+    const s = [
+      { pct: 0.54, mark: 'down', text: '−11,3 %/h', top: '−11,3 %/h', bottom: '10,7 W · 4:46', big: '−11,3%/h', small: '4:46', rate: 11.3, color: W },
+      { pct: 0.54, mark: 'bolt', text: '+38 %/h', top: '+38 %/h', bottom: '64 W · 1:12', big: '+38%/h', small: '1:12', rate: 0, color: W },
+      { pct: 0.80, mark: 'plug', text: '0 %/h', top: 'Na tomada', bottom: 'parado em 80%', big: '80%', small: 'tomada', rate: 0, color: W },
+      { pct: 0.31, mark: 'down', text: '−24,6 %/h', top: '−24,6 %/h', bottom: '22,8 W · 1:15', big: '−24,6%/h', small: '1:15', rate: 24.6, color: HOT }
+    ];
+    const marks = (m) => ({ down: m === 'down', bolt: m === 'bolt', plug: m === 'plug' });
+    const row = (fn) => s.map((x) => ({ ...base, color: x.color, ...fn(x) }));
+    return {
+      states: [
+        { name: 'Descarregando', desc: '54% · saindo 10,7 W' },
+        { name: 'Carregando', desc: '54% · entrando 64 W' },
+        { name: 'Na tomada, parado', desc: 'carga otimizada em 80%' },
+        { name: 'Consumo alto', desc: 'passou do limite (20 %/h)' }
+      ],
+      modes: [
+        { name: 'Empilhado', desc: 'Igual ao seu iStat: valor grande, tempo pequeno em cima da bateria. Monte o seu nas preferências.', default: true,
+          cells: row((x) => ({ stack: true, big: x.big, small: x.small, fill: fill(x.pct) })) },
+        { name: 'Ícone',desc: 'A bateria enche com o %; seta, raio ou tomada dizem o que está acontecendo.', default: false,
+          cells: row((x) => ({ bat: true, fill: fill(x.pct), ...marks(x.mark) })) },
+        { name: 'Valor', desc: 'Só o ritmo em %/h, sem desenho.', default: false,
+          cells: row((x) => ({ one: true, text: x.text })) },
+        { name: 'Ícone + valor', desc: 'Bateria e ritmo lado a lado.', default: false,
+          cells: row((x) => ({ bat: true, fill: fill(x.pct), one: true, text: x.text, ...(x.mark === 'bolt' ? { bolt: true } : x.mark === 'plug' ? { plug: true } : {}) })) },
+        { name: 'Duas linhas', desc: 'Ritmo em cima; watts e tempo embaixo, como o iStat.', default: false,
+          cells: row((x) => ({ two: true, top: x.top, bottom: x.bottom })) },
+        { name: 'Velocímetro', desc: 'O ponteiro sobe conforme o gasto; carregando vira raio.', default: false,
+          cells: row((x) => x.mark === 'down' ? { gauge: true, ...needle(x.rate), one: true, text: x.text } : { ...marks(x.mark), one: true, text: x.text }) }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

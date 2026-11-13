@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Preferências</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#F2CC7A}a:hover{color:#FFE2A3}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 820px; height: 1480px; box-sizing: border-box; background: #13100C; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); color: #F5F5F5; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="display: flex; align-items: center; gap: 8px; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.07);">
+    <span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 50%; background: #FF5F57;"></span>
+    <span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 50%; background: #FEBC2E;"></span>
+    <span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 50%; background: #28C840;"></span>
+    <div style="flex: 1; text-align: center; font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.8); margin-right: 52px;">Preferências</div>
+  </div>
+
+  <div style="padding: 22px 28px; display: flex; flex-direction: column; gap: 26px;">
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+        <div style="display: flex; flex-direction: column; gap: 3px;">
+          <h2 style="margin: 0; font-size: 20px; font-weight: 700;">Item da barra de menus</h2>
+          <div style="font-size: 13px; color: rgba(255,255,255,0.62);">Monte o desenho de cada estado. Clique numa peça para tirá-la; arraste para mudar a ordem.</div>
+        </div>
+        <button aria-pressed="true" style="display: flex; align-items: center; gap: 10px; border: none; background: none; color: #F5F5F5; font-size: 14px; padding: 0;">
+          <span style="width: 40px; height: 24px; border-radius: 12px; background: linear-gradient(#F2CC7A, #BD8A33); position: relative; display: inline-block;"><span style="position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border-radius: 50%; background: #FFFFFF;"></span></span>
+          Um desenho por estado
+        </button>
+      </div>
+
+      <sc-for list="{{rows}}" as="row" hint-placeholder-count="5">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="{{row.box}}">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: {{row.dot}}; flex-shrink: 0;"></span>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+              <span style="font-size: 15px; font-weight: 600;">{{row.name}}</span>
+              <span style="font-size: 12px; color: rgba(255,255,255,0.55);">{{row.hint}}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 2px; height: 34px; padding: 0 8px; border-radius: 8px; background: #2A211C; min-width: 60px; justify-content: flex-end;">
+              <sc-for list="{{row.blocks}}" as="b" hint-placeholder-count="2">
+                <button aria-label="Tirar {{b.name}}" onClick="{{b.remove}}" style="display: flex; align-items: center; height: 30px; padding: 0 3px; border: 1px dashed rgba(255,255,255,0.18); border-radius: 6px; background: none; color: {{b.color}};">
+                  <sc-if value="{{b.isText}}" hint-placeholder-val="{{true}}"><span style="font-size: {{b.fs}}px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap;">{{b.text}}</span></sc-if>
+                  <sc-if value="{{b.isTwo}}" hint-placeholder-val="{{false}}"><span style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.05; font-variant-numeric: tabular-nums; white-space: nowrap;"><span style="font-size: 11px; font-weight: 700;">{{b.top}}</span><span style="font-size: 11px; font-weight: 600; opacity: 0.85;">{{b.bottom}}</span></span></sc-if>
+                  <sc-if value="{{b.isTimeBat}}" hint-placeholder-val="{{false}}"><span style="display: flex; flex-direction: column; align-items: center; gap: 1px; font-variant-numeric: tabular-nums; white-space: nowrap;"><span style="font-size: 10px; font-weight: 700; line-height: 1;">{{b.top}}</span><svg width="24" height="12" viewBox="0 0 30 15" aria-hidden="true"><rect x="0.75" y="0.75" width="25" height="13.5" rx="3.6" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.5"></rect><rect x="27" y="5" width="2" height="5" rx="1" fill="currentColor" fill-opacity="0.6"></rect><rect x="2.75" y="2.75" width="{{b.fill}}" height="9.5" rx="1.8" fill="{{b.fillColor}}"></rect></svg></span></sc-if>
+                  <sc-if value="{{b.isBat}}" hint-placeholder-val="{{false}}"><svg width="30" height="15" viewBox="0 0 30 15" aria-hidden="true"><rect x="0.75" y="0.75" width="25" height="13.5" rx="3.6" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.5"></rect><rect x="27" y="5" width="2" height="5" rx="1" fill="currentColor" fill-opacity="0.6"></rect><rect x="2.75" y="2.75" width="{{b.fill}}" height="9.5" rx="1.8" fill="{{b.fillColor}}"></rect></svg></sc-if>
+                  <sc-if value="{{b.isVbar}}" hint-placeholder-val="{{false}}"><svg width="10" height="20" viewBox="0 0 10 20" aria-hidden="true"><rect x="0.75" y="0.75" width="8.5" height="18.5" rx="2.5" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.5"></rect><rect x="2.5" y="{{b.vy}}" width="5" height="{{b.vh}}" rx="1.2" fill="{{b.fillColor}}"></rect></svg></sc-if>
+                  <sc-if value="{{b.isRing}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-opacity="0.25" stroke-width="3"></circle><circle cx="10" cy="10" r="7" fill="none" stroke="{{b.fillColor}}" stroke-width="3" stroke-dasharray="{{b.dash}}" transform="rotate(-90 10 10)"></circle></svg></sc-if>
+                  <sc-if value="{{b.isGauge}}" hint-placeholder-val="{{false}}"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 18 A8.5 8.5 0 1 1 20.5 18" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="2" stroke-linecap="round"></path><line x1="12" y1="18" x2="{{b.nx}}" y2="{{b.ny}}" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></line><circle cx="12" cy="18" r="2" fill="currentColor"></circle></svg></sc-if>
+                  <sc-if value="{{b.isPill}}" hint-placeholder-val="{{false}}"><span style="font-size: 12px; font-weight: 800; padding: 1px 5px; border-radius: 5px; background: {{b.fillColor}}; color: #17110A; font-variant-numeric: tabular-nums;">{{b.text}}</span></sc-if>
+                  <sc-if value="{{b.isGlyph}}" hint-placeholder-val="{{false}}"><svg width="12" height="16" viewBox="0 0 12 16" aria-hidden="true"><path d="{{b.d}}" fill="{{b.gfill}}" stroke="{{b.gstroke}}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if>
+                  <sc-if value="{{b.isSpace}}" hint-placeholder-val="{{false}}"><span style="display: inline-block; width: 12px; height: 16px; border-left: 1px solid rgba(255,255,255,0.35); border-right: 1px solid rgba(255,255,255,0.35);"></span></sc-if>
+                </button>
+              </sc-for>
+            </div>
+            <button aria-label="Cor de {{row.name}}" style="width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.25); background: {{row.dot}};"></button>
+            <button aria-label="Adicionar peça em {{row.name}}" onClick="{{row.toggle}}" style="width: 34px; height: 34px; border-radius: 17px; border: none; background: rgba(255,255,255,0.08); color: #F5F5F5; display: flex; align-items: center; justify-content: center;">
+              <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1.5v11M1.5 7h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+            </button>
+          </div>
+
+          <sc-if value="{{row.open}}" hint-placeholder-val="{{false}}">
+            <div style="margin-left: 24px; padding: 12px; border-radius: 12px; background: #221B15; border: 1px solid rgba(224,179,87,0.35); display: flex; flex-direction: column; gap: 10px;">
+              <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.6);">Adicionar em {{row.name}}</div>
+              <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;">
+                <sc-for list="{{palette}}" as="b" hint-placeholder-count="15">
+                  <button onClick="{{b.add}}" style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 8px; border: none; border-radius: 8px; background: rgba(255,255,255,0.05); color: #F5F5F5; text-align: left;">
+                    <span style="width: 74px; height: 30px; border-radius: 6px; background: #2A211C; display: flex; align-items: center; justify-content: center; color: {{b.color}}; flex-shrink: 0;">
+                      <sc-if value="{{b.isText}}" hint-placeholder-val="{{true}}"><span style="font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap;">{{b.text}}</span></sc-if>
+                      <sc-if value="{{b.isTwo}}" hint-placeholder-val="{{false}}"><span style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.05; font-variant-numeric: tabular-nums; white-space: nowrap;"><span style="font-size: 10px; font-weight: 700;">{{b.top}}</span><span style="font-size: 10px; font-weight: 600; opacity: 0.85;">{{b.bottom}}</span></span></sc-if>
+                      <sc-if value="{{b.isTimeBat}}" hint-placeholder-val="{{false}}"><span style="display: flex; flex-direction: column; align-items: center; gap: 1px; white-space: nowrap;"><span style="font-size: 9px; font-weight: 700; line-height: 1;">{{b.top}}</span><svg width="22" height="11" viewBox="0 0 30 15" aria-hidden="true"><rect x="0.75" y="0.75" width="25" height="13.5" rx="3.6" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.5"></rect><rect x="27" y="5" width="2" height="5" rx="1" fill="currentColor" fill-opacity="0.6"></rect><rect x="2.75" y="2.75" width="{{b.fill}}" height="9.5" rx="1.8" fill="{{b.fillColor}}"></rect></svg></span></sc-if>
+                      <sc-if value="{{b.isBat}}" hint-placeholder-val="{{false}}"><svg width="28" height="14" viewBox="0 0 30 15" aria-hidden="true"><rect x="0.75" y="0.75" width="25" height="13.5" rx="3.6" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.5"></rect><rect x="27" y="5" width="2" height="5" rx="1" fill="currentColor" fill-opacity="0.6"></rect><rect x="2.75" y="2.75" width="{{b.fill}}" height="9.5" rx="1.8" fill="{{b.fillColor}}"></rect></svg></sc-if>
+                      <sc-if value="{{b.isVbar}}" hint-placeholder-val="{{false}}"><svg width="10" height="20" viewBox="0 0 10 20" aria-hidden="true"><rect x="0.75" y="0.75" width="8.5" height="18.5" rx="2.5" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.5"></rect><rect x="2.5" y="{{b.vy}}" width="5" height="{{b.vh}}" rx="1.2" fill="{{b.fillColor}}"></rect></svg></sc-if>
+                      <sc-if value="{{b.isRing}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-opacity="0.25" stroke-width="3"></circle><circle cx="10" cy="10" r="7" fill="none" stroke="{{b.fillColor}}" stroke-width="3" stroke-dasharray="{{b.dash}}" transform="rotate(-90 10 10)"></circle></svg></sc-if>
+                      <sc-if value="{{b.isGauge}}" hint-placeholder-val="{{false}}"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 18 A8.5 8.5 0 1 1 20.5 18" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="2" stroke-linecap="round"></path><line x1="12" y1="18" x2="{{b.nx}}" y2="{{b.ny}}" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></line><circle cx="12" cy="18" r="2" fill="currentColor"></circle></svg></sc-if>
+                      <sc-if value="{{b.isPill}}" hint-placeholder-val="{{false}}"><span style="font-size: 12px; font-weight: 800; padding: 1px 5px; border-radius: 5px; background: {{b.fillColor}}; color: #17110A;">{{b.text}}</span></sc-if>
+                      <sc-if value="{{b.isGlyph}}" hint-placeholder-val="{{false}}"><svg width="12" height="16" viewBox="0 0 12 16" aria-hidden="true"><path d="{{b.d}}" fill="{{b.gfill}}" stroke="{{b.gstroke}}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if>
+                      <sc-if value="{{b.isSpace}}" hint-placeholder-val="{{false}}"><span style="font-size: 13px; color: rgba(255,255,255,0.7);">‹ ›</span></sc-if>
+                    </span>
+                    <span style="font-size: 13px; line-height: 1.2;">{{b.name}}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <h2 style="margin: 0; font-size: 20px; font-weight: 700;">Ritmo</h2>
+      <sc-for list="{{segs}}" as="g" hint-placeholder-count="3">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 14px; border-radius: 12px; background: rgba(255,255,255,0.05);">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 14px;">{{g.label}}</span>
+            <span style="font-size: 12px; color: rgba(255,255,255,0.55);">{{g.hint}}</span>
+          </div>
+          <div style="display: flex; gap: 3px; padding: 3px; border-radius: 9px; background: rgba(255,255,255,0.06);">
+            <sc-for list="{{g.opts}}" as="o" hint-placeholder-count="4">
+              <button onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 700;">Tema</h2>
+        <span style="font-size: 13px; color: rgba(255,255,255,0.55);">Os mesmos do Budsmith</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px;">
+        <sc-for list="{{themes}}" as="t" hint-placeholder-count="6">
+          <button onClick="{{t.pick}}" style="{{t.box}}">
+            <span style="{{t.swatch}}"></span>
+            <span style="font-size: 13px; font-weight: 600;">{{t.name}}</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <h2 style="margin: 0; font-size: 20px; font-weight: 700;">Avisos e geral</h2>
+      <div style="border-radius: 12px; background: rgba(255,255,255,0.05); display: flex; flex-direction: column; padding: 0 14px;">
+        <sc-for list="{{toggles}}" as="t" hint-placeholder-count="7">
+          <div style="display: flex; align-items: center; gap: 12px; min-height: 48px; border-bottom: {{t.line}};">
+            <span style="flex: 1; font-size: 14px;">{{t.label}}</span>
+            <sc-if value="{{t.hasValue}}" hint-placeholder-val="{{false}}">
+              <span style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; padding: 4px 10px; border-radius: 7px; background: rgba(255,255,255,0.08);">{{t.value}}</span>
+            </sc-if>
+            <button aria-label="{{t.label}}" aria-pressed="{{t.on}}" onClick="{{t.flip}}" style="{{t.track}}"><span style="{{t.knob}}"></span></button>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":820,"height":1480}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const GOLD = 'linear-gradient(#F2CC7A, #BD8A33)', W = 'rgba(255,255,255,0.95)';
+    const S = {
+      full: { name: 'Cheia', hint: 'na tomada, 100%', rate: '0%/h', pct: '100%', pnum: '100', time: 'Cheia', watts: '5 W', glyph: 'plug', fill: 1, fc: '#34C759', rateN: 0, color: W },
+      chg: { name: 'Carregando', hint: 'entrando energia', rate: '+38%/h', pct: '54%', pnum: '54', time: '1:12', watts: '64 W', glyph: 'bolt', fill: 0.54, fc: '#E0B357', rateN: 0, color: W },
+      dis: { name: 'Descarregando', hint: 'na bateria', rate: '−11,3%/h', pct: '54%', pnum: '54', time: '4:46', watts: '10,7 W', glyph: 'down', fill: 0.54, fc: '#F5F5F5', rateN: 11.3, color: W },
+      pause: { name: 'Na tomada, parado', hint: 'carga otimizada', rate: '0%/h', pct: '80%', pnum: '80', time: 'Parado', watts: '0 W', glyph: 'pause', fill: 0.8, fc: '#BF5AF2', rateN: 0, color: W },
+      hot: { name: 'Consumo alto', hint: 'acima do aviso', rate: '−24,6%/h', pct: '31%', pnum: '31', time: '1:15', watts: '22,8 W', glyph: 'down', fill: 0.31, fc: '#FF9F0A', rateN: 24.6, color: '#FF9F0A' }
+    };
+    const PATHS = {
+      bolt: ['M7 1 1.8 9h4L5 15 10.2 7h-4z', 'currentColor', 'none'],
+      down: ['M6 2v11M2 9l4 4 4-4', 'none', 'currentColor'],
+      plug: ['M4 1.5v3.5M8 1.5v3.5M2.5 5h7v3a3.5 3.5 0 0 1-7 0zM6 11.5V15', 'none', 'currentColor'],
+      pause: ['M4 3v10M8 3v10', 'none', 'currentColor']
+    };
+    const KINDS = [
+      ['rate', 'Ritmo (%/h)'], ['rate2', 'Ritmo e watts'], ['rateBat', 'Ritmo sobre a bateria'],
+      ['timeBat', 'Tempo sobre a bateria'], ['pct', 'Porcentagem'], ['time', 'Tempo'],
+      ['watts', 'Watts'], ['label', 'Etiqueta e valor'], ['glyph', 'Ícone'],
+      ['bat', 'Bateria'], ['vbar', 'Barra vertical'], ['ring', 'Anel'],
+      ['gauge', 'Velocímetro'], ['pill', 'Número na pílula'], ['space', 'Espaçador']
+    ];
+    const NAMES = Object.fromEntries(KINDS);
+    const mk = (k, s) => {
+      const b = { name: NAMES[k], color: s.color, fillColor: s.fc, isText: false, isTwo: false, isTimeBat: false, isBat: false, isVbar: false, isRing: false, isGauge: false, isPill: false, isGlyph: false, isSpace: false, fs: 16, text: '', top: '', bottom: '' };
+      b.fill = Math.max(2, Math.round(21.5 * s.fill));
+      b.vh = Math.max(2, Math.round(15 * s.fill)); b.vy = 2.5 + 15 - b.vh;
+      b.dash = (44 * s.fill).toFixed(1) + ' 44';
+      const t = Math.PI * Math.min(s.rateN, 30) / 30; b.nx = (12 - 6.5 * Math.cos(t)).toFixed(1); b.ny = (18 - 6.5 * Math.sin(t)).toFixed(1);
+      const p = PATHS[s.glyph]; b.d = p[0]; b.gfill = p[1]; b.gstroke = p[2];
+      if (k === 'rate') Object.assign(b, { isText: true, text: s.rate });
+      if (k === 'pct') Object.assign(b, { isText: true, text: s.pct });
+      if (k === 'time') Object.assign(b, { isText: true, text: s.time });
+      if (k === 'watts') Object.assign(b, { isText: true, text: s.watts });
+      if (k === 'rate2') Object.assign(b, { isTwo: true, top: s.rate, bottom: s.watts });
+      if (k === 'label') Object.assign(b, { isTwo: true, top: 'BAT', bottom: s.pct });
+      if (k === 'rateBat') Object.assign(b, { isTimeBat: true, top: s.rate });
+      if (k === 'timeBat') Object.assign(b, { isTimeBat: true, top: s.time });
+      if (k === 'glyph') b.isGlyph = true;
+      if (k === 'bat') b.isBat = true;
+      if (k === 'vbar') b.isVbar = true;
+      if (k === 'ring') b.isRing = true;
+      if (k === 'gauge') b.isGauge = true;
+      if (k === 'pill') Object.assign(b, { isPill: true, text: s.pnum });
+      if (k === 'space') b.isSpace = true;
+      return b;
+    };
+    const order = ['full', 'chg', 'dis', 'pause', 'hot'];
+    const layout = st.layout || { full: ['glyph', 'bat'], chg: ['rate', 'timeBat'], dis: ['rate', 'timeBat'], pause: ['pct', 'glyph', 'bat'], hot: ['rate', 'timeBat'] };
+    const open = st.open !== undefined ? st.open : 'dis';
+    const setLayout = (key, list) => this.setState({ layout: { ...layout, [key]: list } });
+    const rows = order.map((key) => {
+      const s = S[key], isOpen = open === key;
+      return {
+        name: s.name, hint: s.hint, dot: s.fc, open: isOpen,
+        box: 'display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.05);' + (isOpen ? ' box-shadow: inset 0 0 0 1px rgba(224,179,87,0.55);' : ''),
+        toggle: () => this.setState({ open: isOpen ? null : key }),
+        blocks: layout[key].map((k, i) => ({ ...mk(k, s), remove: () => setLayout(key, layout[key].filter((_, j) => j !== i)) }))
+      };
+    });
+    const ps = S[open || 'dis'];
+    const palette = KINDS.map(([k]) => ({ ...mk(k, ps), add: () => setLayout(open || 'dis', layout[open || 'dis'].concat(k)) }));
+
+    const seg = (id, label, hint, opts, def) => {
+      const sel = st[id] != null ? st[id] : def;
+      return { label, hint, opts: opts.map((o, i) => ({ label: o, pick: () => this.setState({ [id]: i }),
+        style: 'height: 28px; padding: 0 11px; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; ' + (i === sel ? 'background: ' + GOLD + '; color: #1F1505;' : 'background: transparent; color: rgba(255,255,255,0.75);') })) };
+    };
+    const segs = [
+      seg('avg', 'Calcular pela média de', 'Média curta reage rápido; longa fica estável', ['Agora', '5 min', '15 min', '1 h'], 2),
+      seg('dec', 'Casas decimais', '−11 %/h ou −11,3 %/h', ['0', '1'], 1),
+      seg('sign', 'Indicar o sentido com', 'Saindo ou entrando energia', ['− e +', 'Setas', 'Só cor'], 0)
+    ];
+
+    const themeSel = st.theme != null ? st.theme : 0;
+    const themes = [
+      ['Gold', 'linear-gradient(#F2CC7A, #BD8A33)', '#13100C'], ['Black', 'linear-gradient(#F7F7F7, #BDBDBD)', '#0B0B0D'],
+      ['White', 'linear-gradient(#383838, #121212)', '#F6F5F1'], ['Neon', '#00F0FF', '#000000'],
+      ['Liquid Glass', 'linear-gradient(135deg, #7FD3F7, #8A7CF0, #F59BC4)', 'rgba(255,255,255,0.12)'], ['Classic', 'linear-gradient(#F55A4D, #CC2440)', '#1E1E1E']
+    ].map(([name, accent, bg], i) => ({
+      name, pick: () => this.setState({ theme: i }),
+      box: 'display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 6px; border-radius: 12px; color: #F5F5F5; background: rgba(255,255,255,0.05); border: ' + (i === themeSel ? '2px solid #E0B357' : '2px solid transparent') + ';',
+      swatch: 'width: 52px; height: 52px; border-radius: 12px; background: ' + bg + '; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15); display: block; position: relative; background-image: ' + (accent.indexOf('gradient') >= 0 ? accent : 'linear-gradient(' + accent + ',' + accent + ')') + '; background-size: 24px 24px; background-position: center; background-repeat: no-repeat; background-color: ' + bg + ';'
+    }));
+
+    const tg = st.tg || {};
+    const raw = [
+      ['alertRate', 'Avisar quando o consumo passar de', '20 %/h', true],
+      ['alertLow', 'Avisar quando a bateria ficar abaixo de', '20%', true],
+      ['alertFull', 'Avisar quando carregar até', '80%', false],
+      ['alertWeak', 'Avisar se o carregador for fraco (menos de)', '30 W', true],
+      ['colorState', 'Colorir a barra conforme o estado', '', true],
+      ['login', 'Abrir ao iniciar o Mac', '', true],
+      ['history', 'Guardar histórico por', '90 dias', true]
+    ];
+    const toggles = raw.map(([id, label, value, def], i) => {
+      const on = tg[id] != null ? tg[id] : def;
+      return { label, value, hasValue: !!value, on: on ? 'true' : 'false',
+        flip: () => this.setState({ tg: { ...tg, [id]: !on } }),
+        line: i < raw.length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none',
+        track: 'width: 40px; height: 24px; border-radius: 12px; border: none; padding: 0; position: relative; flex-shrink: 0; background: ' + (on ? GOLD : 'rgba(255,255,255,0.18)') + ';',
+        knob: 'position: absolute; top: 2px; ' + (on ? 'right: 2px;' : 'left: 2px;') + ' width: 20px; height: 20px; border-radius: 50%; background: #FFFFFF;' };
+    });
+    return { rows, palette, segs, themes, toggles };
+  }
+}
+</script>
+</body>
+</html>

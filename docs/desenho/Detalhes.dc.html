@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Mais informações</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#F2CC7A}a:hover{color:#FFE2A3}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 1240px; height: 860px; box-sizing: border-box; background: #13100C; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); color: #F5F5F5; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif; display: flex; overflow: hidden;">
+
+  <div style="width: 230px; flex-shrink: 0; background: rgba(255,255,255,0.035); border-right: 1px solid rgba(255,255,255,0.07); padding: 16px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px;">
+    <div style="display: flex; gap: 8px; padding: 0 6px 18px;" aria-hidden="true">
+      <span style="width: 12px; height: 12px; border-radius: 50%; background: #FF5F57;"></span>
+      <span style="width: 12px; height: 12px; border-radius: 50%; background: #FEBC2E;"></span>
+      <span style="width: 12px; height: 12px; border-radius: 50%; background: #28C840;"></span>
+    </div>
+    <sc-for list="{{nav}}" as="n" hint-placeholder-count="5">
+      <button style="{{n.style}}" onClick="{{n.pick}}">{{n.label}}</button>
+    </sc-for>
+    <div style="flex: 1;"></div>
+    <div style="padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 4px;">
+      <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Guardando histórico</div>
+      <div style="font-size: 13px; line-height: 1.35;">Uma leitura a cada 30 s · 90 dias · 4 MB</div>
+    </div>
+  </div>
+
+  <div style="flex: 1; min-width: 0; padding: 22px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em;">Hoje</h1>
+        <div style="font-size: 14px; color: rgba(255,255,255,0.62);">sexta, 13 de novembro · agora 54%, gastando 15,3 %/h</div>
+      </div>
+      <div style="display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: rgba(255,255,255,0.06);">
+        <sc-for list="{{periods}}" as="p" hint-placeholder-count="3">
+          <button style="{{p.style}}" onClick="{{p.pick}}">{{p.label}}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;">
+      <sc-for list="{{stats}}" as="s" hint-placeholder-count="4">
+        <div style="padding: 14px; border-radius: 12px; background: rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 4px;">
+          <div style="font-size: 12px; color: rgba(255,255,255,0.62);">{{s.k}}</div>
+          <div style="font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; color: {{s.color}};">{{s.v}}</div>
+          <div style="font-size: 12px; color: rgba(255,255,255,0.55);">{{s.sub}}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; gap: 16px; flex: 1; min-height: 0;">
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px;">
+        <div style="padding: 14px 16px 10px; border-radius: 12px; background: rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.6);">Carga da bateria</div>
+            <div style="display: flex; gap: 14px; font-size: 12px; color: rgba(255,255,255,0.65);">
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 14px; height: 2px; background: #E0B357;"></span>Carga</span>
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 14px; height: 0; border-top: 2px dashed rgba(224,179,87,0.7);"></span>Previsão</span>
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: rgba(52,199,89,0.25);"></span>Na tomada</span>
+            </div>
+          </div>
+          <svg width="100%" height="220" viewBox="0 0 640 220" preserveAspectRatio="none" role="img" aria-label="Carga ao longo do dia: 100% às 8h05, 65% às 11h12, carregou até 80% às 11h41, 54% agora; previsão de acabar às 18h09">
+            <rect x="{{band.x}}" y="10" width="{{band.w}}" height="200" fill="rgba(52,199,89,0.18)"></rect>
+            <line x1="0" y1="10" x2="640" y2="10" stroke="rgba(255,255,255,0.07)"></line>
+            <line x1="0" y1="110" x2="640" y2="110" stroke="rgba(255,255,255,0.07)"></line>
+            <line x1="0" y1="210" x2="640" y2="210" stroke="rgba(255,255,255,0.14)"></line>
+            <polyline points="{{line}}" fill="none" stroke="#E0B357" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline>
+            <polyline points="{{proj}}" fill="none" stroke="rgba(224,179,87,0.7)" stroke-width="2" stroke-dasharray="6 5" vector-effect="non-scaling-stroke"></polyline>
+            <line x1="{{now}}" y1="10" x2="{{now}}" y2="210" stroke="rgba(255,255,255,0.35)" stroke-dasharray="2 3" vector-effect="non-scaling-stroke"></line>
+          </svg>
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: rgba(255,255,255,0.55); font-variant-numeric: tabular-nums;">
+            <span>06:00</span><span>08:00</span><span>10:00</span><span>12:00</span><span>agora</span><span>16:00</span><span>18:09 · acaba</span><span>20:00</span>
+          </div>
+        </div>
+
+        <div style="padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 8px;">
+          <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.6);">Trechos do dia</div>
+          <div style="display: grid; grid-template-columns: 120px 120px minmax(0, 1fr) 100px 80px; gap: 0 12px; font-size: 13px; color: rgba(255,255,255,0.55); padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <span>Horário</span><span>Estado</span><span>Carga</span><span style="text-align: right;">Ritmo</span><span style="text-align: right;">Média</span>
+          </div>
+          <sc-for list="{{sessions}}" as="r" hint-placeholder-count="3">
+            <div style="display: grid; grid-template-columns: 120px 120px minmax(0, 1fr) 100px 80px; gap: 0 12px; font-size: 14px; font-variant-numeric: tabular-nums; padding: 3px 0;">
+              <span>{{r.when}}</span>
+              <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 7px; height: 7px; border-radius: 50%; background: {{r.dot}};"></span>{{r.state}}</span>
+              <span>{{r.range}}</span>
+              <span style="text-align: right; font-weight: 600; color: {{r.color}};">{{r.rate}}</span>
+              <span style="text-align: right; color: rgba(255,255,255,0.75);">{{r.watts}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px;">
+        <div style="padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.6);">Quem mais gastou</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.55);">Wh hoje, estimado</div>
+          </div>
+          <sc-for list="{{apps}}" as="a" hint-placeholder-count="6">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 3px 0;">
+              <div style="width: 22px; height: 22px; border-radius: 6px; background: {{a.tile}}; color: #1F1505; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{a.initial}}</div>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+                <div style="display: flex; justify-content: space-between; font-size: 13px;"><span>{{a.name}}</span><span style="font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.75);">{{a.wh}}</span></div>
+                <div style="height: 3px; border-radius: 2px; background: rgba(255,255,255,0.08);"><div style="{{a.bar}}"></div></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 10px;">
+          <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.6);">Saúde da bateria</div>
+          <div style="display: flex; align-items: baseline; gap: 8px;"><span style="font-size: 30px; font-weight: 700; color: #F2CC7A;">100%</span><span style="font-size: 13px; color: rgba(255,255,255,0.62);">Normal</span></div>
+          <sc-for list="{{health}}" as="h" hint-placeholder-count="4">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; font-variant-numeric: tabular-nums;"><span style="color: rgba(255,255,255,0.65);">{{h.k}}</span><span>{{h.v}}</span></div>
+          </sc-for>
+        </div>
+
+        <button style="height: 40px; border-radius: 20px; border: 1px solid rgba(224,179,87,0.5); background: transparent; color: #F2CC7A; font-size: 14px; font-weight: 600;">Exportar CSV do período</button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1240,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const navSel = st.nav != null ? st.nav : 0, perSel = st.per != null ? st.per : 0;
+    const nav = ['Visão geral', 'Histórico', 'Apps', 'Saúde da bateria', 'Alertas'].map((label, i) => ({
+      label, pick: () => this.setState({ nav: i }),
+      style: 'text-align: left; height: 34px; padding: 0 12px; border: none; border-radius: 8px; font-size: 14px; ' + (i === navSel ? 'background: linear-gradient(#F2CC7A, #BD8A33); color: #1F1505; font-weight: 600;' : 'background: transparent; color: rgba(255,255,255,0.8);')
+    }));
+    const periods = ['Hoje', '7 dias', '30 dias'].map((label, i) => ({
+      label, pick: () => this.setState({ per: i }),
+      style: 'height: 28px; padding: 0 14px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; ' + (i === perSel ? 'background: linear-gradient(#F2CC7A, #BD8A33); color: #1F1505;' : 'background: transparent; color: rgba(255,255,255,0.75);')
+    }));
+    const X = (h) => ((h - 6) / 14 * 640).toFixed(1), Y = (p) => (10 + (100 - p) * 2).toFixed(1);
+    const hm = (h, m) => h + m / 60;
+    const pts = [[hm(8,5),100],[hm(8,40),95],[hm(9,20),88],[hm(10,0),80],[hm(10,35),72],[hm(11,12),65],[hm(11,25),72],[hm(11,41),80],[hm(12,0),76],[hm(12,30),69],[hm(13,0),60],[hm(13,23),54]];
+    const line = pts.map(([h, p]) => X(h) + ',' + Y(p)).join(' ');
+    const proj = X(hm(13,23)) + ',' + Y(54) + ' ' + X(hm(18,9)) + ',' + Y(0);
+    const band = { x: X(hm(11,12)), w: (X(hm(11,41)) - X(hm(11,12))).toFixed(1) };
+    const GOLD = '#F2CC7A', W = '#F5F5F5', HOT = '#FFB340';
+    const stats = [
+      { k: 'Média na bateria', v: '−12,7 %/h', sub: '11,6 W em média', color: GOLD },
+      { k: 'Pior hora', v: '−17,8 %/h', sub: '12:00 às 13:00', color: HOT },
+      { k: 'Tempo na bateria', v: '4h49', sub: 'desde 08:05', color: W },
+      { k: 'Carregou', v: '1 vez', sub: '+15% em 29 min', color: W }
+    ];
+    const sessions = [
+      { when: '08:05 – 11:12', state: 'Na bateria', dot: '#FFB340', range: '100% → 65%', rate: '−11,2 %/h', watts: '10,4 W', color: GOLD },
+      { when: '11:12 – 11:41', state: 'Carregando', dot: '#34C759', range: '65% → 80% · parou em 80%', rate: '+31 %/h', watts: '58 W', color: '#7EE2A0' },
+      { when: '11:41 – agora', state: 'Na bateria', dot: '#FFB340', range: '80% → 54%', rate: '−15,3 %/h', watts: '13,9 W', color: GOLD }
+    ];
+    const apps = [
+      { name: 'Tela e sistema', initial: 'S', tile: '#D9D4CA', wh: 14.2 },
+      { name: 'Claude', initial: 'C', tile: '#E8A07C', wh: 12.6 },
+      { name: 'Google Chrome', initial: 'G', tile: '#9CC3F5', wh: 9.8 },
+      { name: 'Microsoft Teams', initial: 'T', tile: '#A9A6F2', wh: 7.1 },
+      { name: 'Xcode', initial: 'X', tile: '#8FD3F0', wh: 4.4 },
+      { name: 'Outros', initial: '+', tile: '#8C8577', wh: 3.9 }
+    ].map((a) => ({ ...a, wh: String(a.wh).replace('.', ',') + ' Wh', bar: 'width: ' + Math.round(a.wh / 14.2 * 100) + '%; height: 3px; border-radius: 2px; background: #E0B357;' }));
+    const health = [
+      { k: 'Capacidade agora', v: '8.754 mAh' },
+      { k: 'Capacidade de fábrica', v: '8.693 mAh' },
+      { k: 'Ciclos', v: '37 de 1.000' },
+      { k: 'Temperatura média hoje', v: '28 °C' }
+    ];
+    return { nav, periods, line, proj, band, now: X(hm(13,23)), stats, sessions, apps, health };
+  }
+}
+</script>
+</body>
+</html>

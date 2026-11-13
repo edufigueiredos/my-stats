@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Os 6 temas</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#F2CC7A}a:hover{color:#FFE2A3}
+</style>
+</helmet>
+<div style="width: 1720px; height: 640px; box-sizing: border-box; padding: 40px 48px; background: #0E0C0A; color: #F5F5F5; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 24px;">
+  <div style="display: flex; align-items: baseline; gap: 16px;">
+    <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em;">Temas</h1>
+    <span style="font-size: 15px; color: rgba(255,255,255,0.62);">Os mesmos 6 do Budsmith, com as mesmas cores. Neon deixa escolher a cor; Liquid Glass segue o sistema.</span>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 20px;">
+    <sc-for list="{{themes}}" as="t" hint-placeholder-count="6">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 15px; font-weight: 600;">{{t.name}}</div>
+        <div style="{{t.panel}}">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="{{t.tile}}">
+              <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 18 A8.5 8.5 0 1 1 20.5 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path><line x1="12" y1="18" x2="9.4" y2="12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></line><circle cx="12" cy="18" r="2.1" fill="currentColor"></circle></svg>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 1px;">
+              <span style="font-size: 15px; font-weight: 700;">Descarregando</span>
+              <span style="font-size: 12px; color: {{t.muted}};">Na bateria</span>
+            </div>
+          </div>
+          <div style="{{t.card}} display: flex; align-items: center; gap: 8px; padding: 12px;">
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: {{t.muted}};">Gastando</span>
+              <span style="font-size: 30px; font-weight: 700; letter-spacing: -0.03em; color: {{t.accent}}; font-variant-numeric: tabular-nums;">−11,3</span>
+              <span style="font-size: 12px; color: {{t.muted}};">%/h · média 15 min</span>
+            </div>
+            <svg width="62" height="62" viewBox="0 0 96 96" aria-hidden="true"><circle cx="48" cy="48" r="40" fill="none" stroke="{{t.track}}" stroke-width="9"></circle><circle cx="48" cy="48" r="40" fill="none" stroke="{{t.ring}}" stroke-width="9" stroke-linecap="round" stroke-dasharray="135.7 251.3" transform="rotate(-90 48 48)"></circle><text x="48" y="55" text-anchor="middle" font-size="22" font-weight="700" fill="currentColor">54%</text></svg>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+            <div style="{{t.card}} padding: 10px; display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 11px; color: {{t.muted}};">Saindo</span>
+              <span style="font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums;">10,7 W</span>
+            </div>
+            <div style="{{t.card}} padding: 10px; display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 11px; color: {{t.muted}};">Acaba em</span>
+              <span style="font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums;">4h46</span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 4px;">
+            <span style="{{t.off}}">15 min</span>
+            <span style="{{t.on}}">1 h</span>
+            <span style="{{t.off}}">24 h</span>
+          </div>
+          <div style="{{t.card}} padding: 10px; display: flex; align-items: flex-end; gap: 3px; height: 70px; box-sizing: border-box;">
+            <sc-for list="{{t.bars}}" as="b" hint-placeholder-count="16">
+              <span style="{{b}}"></span>
+            </sc-for>
+          </div>
+          <div style="{{t.button}}">Mais informações</div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1720,"height":640}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const T = [
+      { name: 'Gold', bg: '#13100C', text: '#F5F5F5', muted: 'rgba(255,255,255,0.62)', card: 'rgba(255,255,255,0.06)', stroke: 'transparent', accent: '#F2CC7A', fill: 'linear-gradient(#F2CC7A, #BD8A33)', on: '#1F1505', ring: '#E0B357', track: 'rgba(255,255,255,0.10)', glow: '0 2px 10px rgba(224,179,87,0.35)', bar: '#E0B357' },
+      { name: 'Black', bg: '#0B0B0D', text: '#F5F5F5', muted: 'rgba(255,255,255,0.62)', card: 'rgba(255,255,255,0.065)', stroke: 'transparent', accent: '#EBEBEB', fill: 'linear-gradient(#F7F7F7, #BDBDBD)', on: '#0F0F0F', ring: '#E6E6E6', track: 'rgba(255,255,255,0.10)', glow: '0 2px 8px rgba(255,255,255,0.16)', bar: '#E6E6E6' },
+      { name: 'White', bg: '#F6F5F1', text: '#171717', muted: 'rgba(0,0,0,0.62)', card: 'rgba(0,0,0,0.05)', stroke: 'transparent', accent: '#1F1F1F', fill: 'linear-gradient(#383838, #121212)', on: '#FFFFFF', ring: '#292929', track: 'rgba(0,0,0,0.10)', glow: 'none', bar: '#292929' },
+      { name: 'Neon', bg: '#000000', text: '#F5F5F5', muted: 'rgba(0,240,255,0.75)', card: 'rgba(0,240,255,0.05)', stroke: 'rgba(0,240,255,0.28)', accent: '#00F0FF', fill: 'rgba(0,240,255,0.16)', on: '#00F0FF', ring: '#00F0FF', track: 'rgba(0,240,255,0.15)', glow: '0 0 9px rgba(0,240,255,0.75)', bar: '#00F0FF', neon: true },
+      { name: 'Liquid Glass', bg: 'linear-gradient(135deg, #2D6F86, #33386F 55%, #6A3558)', text: '#F5F5F5', muted: 'rgba(255,255,255,0.72)', card: 'rgba(255,255,255,0.10)', stroke: 'rgba(255,255,255,0.18)', accent: '#8CC8FF', fill: '#0A84FF', on: '#FFFFFF', ring: '#0A84FF', track: 'rgba(255,255,255,0.18)', glow: 'none', bar: '#8CC8FF' },
+      { name: 'Classic', bg: '#1E1E1E', text: '#F5F5F5', muted: 'rgba(255,255,255,0.62)', card: 'rgba(255,255,255,0.06)', stroke: 'transparent', accent: '#FF6B61', fill: 'linear-gradient(#F55A4D, #CC2440)', on: '#FFFFFF', ring: '#F55A4D', track: 'rgba(255,255,255,0.10)', glow: '0 2px 8px rgba(245,87,77,0.35)', bar: '#F55A4D' }
+    ];
+    const vals = [9, 10, 9, 11, 13, 11, 9, 9, 10, 12, 14, 15, 12, 10, 13, 15];
+    const themes = T.map((t) => {
+      const pillBase = 'height: 24px; padding: 0 10px; border-radius: 12px; font-size: 12px; font-weight: 600; display: flex; align-items: center; ';
+      return {
+        name: t.name, muted: t.muted, accent: t.accent, ring: t.ring, track: t.track,
+        panel: 'height: 520px; box-sizing: border-box; padding: 14px; border-radius: 16px; background: ' + t.bg + '; color: ' + t.text + '; display: flex; flex-direction: column; gap: 10px; border: 1px solid ' + (t.name === 'White' ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.10)') + ';',
+        tile: 'width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: ' + t.on + '; background: ' + t.fill + ';' + (t.neon ? ' box-shadow: inset 0 0 0 1.5px #00F0FF, ' + t.glow + ';' : ''),
+        card: 'border-radius: 12px; background: ' + t.card + '; box-shadow: inset 0 0 0 1px ' + t.stroke + ';',
+        on: pillBase + 'background: ' + t.fill + '; color: ' + t.on + '; box-shadow: ' + (t.neon ? 'inset 0 0 0 1.5px #00F0FF, ' : '') + t.glow + ';',
+        off: pillBase + 'background: ' + t.card + '; color: ' + t.muted + ';',
+        button: 'margin-top: auto; height: 38px; border-radius: 19px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; background: ' + t.fill + '; color: ' + t.on + '; box-shadow: ' + (t.neon ? 'inset 0 0 0 1.5px #00F0FF, ' : '') + t.glow + ';',
+        bars: vals.map((v, i) => 'flex: 1; border-radius: 2px 2px 0 0; height: ' + Math.round(v / 16 * 48) + 'px; background: ' + t.bar + '; opacity: ' + (i >= 12 ? 1 : 0.55) + ';')
+      };
+    });
+    return { themes };
+  }
+}
+</script>
+</body>
+</html>
