@@ -128,10 +128,10 @@ struct PainelView: View {
         Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 5) {
             linha("Agora", Formato.ritmo(b.ritmoInstantaneo))
             linha(b.correnteMa > 0 ? "Até encher" : "Tempo restante", tempoRestante(b))
-            linha("Potência", "\(Formato.numero(b.watts)) W")
-            linha("Corrente", "\(b.correnteMa) mA")
+            linha("Potência", "\(Formato.comSinal(b.watts)) W")
+            linha("Corrente", "\(Formato.comSinal(Double(b.correnteMa), casas: 0)) mA")
             linha("Tensão", "\(Formato.numero(Double(b.tensaoMv) / 1000, casas: 2)) V")
-            linha("Carga", "\(b.cargaMah) de \(b.capacidadeMah) mAh")
+            linha("Carga", "\(Formato.numero(Double(b.cargaMah), casas: 0)) de \(Formato.numero(Double(b.capacidadeMah), casas: 0)) mAh")
         }
         .font(.callout)
     }
@@ -158,13 +158,16 @@ struct PainelView: View {
             Text("Última hora (%/h)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            let cor: Color = (monitor.ritmoMedio ?? 0) > 0 ? .green : .orange
             Chart {
                 ForEach(monitor.amostras) { a in
                     AreaMark(x: .value("Hora", a.data), y: .value("%/h", a.ritmo))
-                        .foregroundStyle(a.ritmo < 0 ? Color.orange.opacity(0.25) : Color.green.opacity(0.25))
+                        .foregroundStyle(cor.opacity(0.22))
+                        .interpolationMethod(.monotone)
                     LineMark(x: .value("Hora", a.data), y: .value("%/h", a.ritmo))
-                        .foregroundStyle(a.ritmo < 0 ? Color.orange : Color.green)
-                        .lineStyle(StrokeStyle(lineWidth: 1.2))
+                        .foregroundStyle(cor)
+                        .lineStyle(StrokeStyle(lineWidth: 1.5))
+                        .interpolationMethod(.monotone)
                 }
                 if let media = monitor.ritmoMedio {
                     RuleMark(y: .value("Média", media))
@@ -174,13 +177,29 @@ struct PainelView: View {
             }
             .chartXScale(domain: agora.addingTimeInterval(-Monitor.janelaGrafico)...agora)
             .chartXAxis {
-                AxisMarks(values: .stride(by: .minute, count: 15)) { _ in
+                AxisMarks(values: marcasDeHora(ate: agora)) { _ in
                     AxisGridLine()
                     AxisValueLabel(format: .dateTime.hour().minute())
                 }
             }
             .frame(height: 110)
         }
+    }
+
+    /// Marcas a cada 15 min em horários redondos (13:00, 13:15...).
+    private func marcasDeHora(ate agora: Date) -> [Date] {
+        let cal = Calendar.current
+        let inicio = agora.addingTimeInterval(-Monitor.janelaGrafico)
+        var c = cal.dateComponents([.year, .month, .day, .hour], from: inicio)
+        c.minute = 0
+        guard var d = cal.date(from: c) else { return [] }
+        var marcas: [Date] = []
+        // Sem marca colada na borda direita, onde o rótulo seria cortado.
+        while d <= agora.addingTimeInterval(-4 * 60) {
+            if d >= inicio { marcas.append(d) }
+            d = d.addingTimeInterval(15 * 60)
+        }
+        return marcas
     }
 
     private var rodape: some View {

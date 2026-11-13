@@ -138,6 +138,13 @@ enum Formato {
         v.formatted(.number.precision(.fractionLength(casas)).locale(br))
     }
 
+    /// Número com "−" tipográfico: "−13,3", "+2,0".
+    static func comSinal(_ v: Double, casas: Int = 1) -> String {
+        let n = numero(abs(v), casas: casas)
+        if n == numero(0, casas: casas) { return n }
+        return (v < 0 ? "−" : "+") + n
+    }
+
     /// "−8,3 %/h", "+12,0 %/h" ou "0,0 %/h".
     static func ritmo(_ v: Double?) -> String {
         guard let v else { return "– %/h" }
