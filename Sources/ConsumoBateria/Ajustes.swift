@@ -78,7 +78,7 @@ final class Ajustes {
 
     /// Peças e cor do estado (cai na predefinição se faltar).
     func config(_ estado: EstadoBarra) -> ConfigEstado {
-        configs[estado] ?? ConfigEstado(pecas: formatoBarra.pecas(para: estado), corHex: estado.corPadraoHex)
+        configs[estado] ?? formatoBarra.config(para: estado, corHex: estado.corPadraoHex)
     }
 
     /// Escolhe um formato pronto: reescreve as listas de peças de todos os estados, mantendo as cores.
@@ -94,7 +94,7 @@ final class Ajustes {
 
     static func configsPadrao(_ formato: FormatoBarra) -> [EstadoBarra: ConfigEstado] {
         Dictionary(uniqueKeysWithValues: EstadoBarra.allCases.map {
-            ($0, ConfigEstado(pecas: formato.pecas(para: $0), corHex: $0.corPadraoHex))
+            ($0, formato.config(para: $0, corHex: $0.corPadraoHex))
         })
     }
 

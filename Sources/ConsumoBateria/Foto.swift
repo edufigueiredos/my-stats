@@ -41,8 +41,12 @@ enum Foto {
         png(RaizTematica(temaFixo: .gold) {
             JanelaDetalhes(historico: .exemplo(agora: Situacao.exemploDescarregando.leitura.data, percentualAgora: 54), situacao: .exemploDescarregando, paraFoto: true)
         }, "detalhes", em: url)
+        // Preferências com o estado aberto (Descarregando) em duas linhas.
+        let ajustesDuas = Ajustes(persistir: false)
+        ajustesDuas.configs[.descarregando] = FormatoBarra.duasLinhas.config(
+            para: .descarregando, corHex: EstadoBarra.descarregando.corPadraoHex)
         png(RaizTematica(temaFixo: .gold) {
-            JanelaPreferencias(ajustes: ajustes, abrirAoIniciar: true, alternarAbrirAoIniciar: { _ in }, paraFoto: true)
+            JanelaPreferencias(ajustes: ajustesDuas, abrirAoIniciar: true, alternarAbrirAoIniciar: { _ in }, paraFoto: true)
         }, "preferencias", em: url)
 
         // Um PNG por tema (o vidro de verdade não sai fora da janela: usa o substituto chapado).

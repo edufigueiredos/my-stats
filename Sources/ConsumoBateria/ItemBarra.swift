@@ -16,7 +16,7 @@ enum CorDaBarra {
 
 // MARK: - Vista do item
 
-/// O item da barra de menus: as peças do estado lado a lado, 22 pt de altura.
+/// O item da barra de menus: as peças do estado lado a lado (ou em duas linhas empilhadas), 22 pt de altura.
 struct VistaItemBarra: View {
     var situacao: Situacao
     var config: ConfigEstado
@@ -37,10 +37,28 @@ struct VistaItemBarra: View {
         config.pecas.contains(.tempoSobreBateria) || config.pecas.contains(.ritmoSobreBateria)
     }
 
+    private func linha(_ pecas: [Peca], _ qual: LinhaPeca) -> some View {
+        HStack(spacing: 3) {
+            ForEach(Array(pecas.enumerated()), id: \.offset) { _, peca in
+                VistaPeca(peca: peca, situacao: situacao, cor: cor, casas: casas, sentido: sentido, linha: qual)
+            }
+        }
+        .opacity(qual == .baixo ? 0.85 : 1)
+    }
+
     var body: some View {
-        HStack(spacing: 4) {
-            ForEach(Array(config.pecas.enumerated()), id: \.offset) { _, peca in
-                VistaPeca(peca: peca, situacao: situacao, cor: cor, casas: casas, sentido: sentido, grande: empilhado)
+        Group {
+            if config.duasLinhas {
+                VStack(alignment: .leading, spacing: -1.5) {
+                    linha(config.pecas, .cima)
+                    linha(config.pecasBaixo, .baixo)
+                }
+            } else {
+                HStack(spacing: 4) {
+                    ForEach(Array(config.pecas.enumerated()), id: \.offset) { _, peca in
+                        VistaPeca(peca: peca, situacao: situacao, cor: cor, casas: casas, sentido: sentido, grande: empilhado)
+                    }
+                }
             }
         }
         .environment(\.desenhoModelo, modelo)
@@ -185,7 +203,7 @@ enum FotoBarra {
     /// O item sobre uma faixa que imita a barra de menus escura de Main.dc.html, com a predefinição do formato.
     static func imagemDeConferencia(formato: FormatoBarra, estado: EstadoBarra) -> NSImage {
         let situacao = Situacao.exemplo(estado)
-        let config = ConfigEstado(pecas: formato.pecas(para: estado), corHex: estado.corPadraoHex)
+        let config = formato.config(para: estado, corHex: estado.corPadraoHex)
         // Como no desenho, só o consumo alto é colorido; o resto fica branco.
         let vista = VistaItemBarra(situacao: situacao, config: config, colorir: false, casas: 1, sentido: .sinais)
         let faixa = ZStack(alignment: .topLeading) {

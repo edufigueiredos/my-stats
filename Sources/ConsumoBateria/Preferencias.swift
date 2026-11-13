@@ -17,6 +17,10 @@ struct JanelaPreferencias: View {
     @State private var aberto: EstadoBarra?
     /// Peça em arrasto: o estado da linha de origem e o índice atual dela.
     @State private var arrastando: ArrastoPeca?
+    /// Linha que a paleta aberta alimenta.
+    @State private var linhaAberta: LinhaPeca = .cima
+    /// Estados com a chave "Duas linhas" ligada ainda sem peça embaixo (a config só vira duas linhas com peça).
+    @State private var editandoDuas: Set<EstadoBarra> = []
 
     init(ajustes: Ajustes, abrirAoIniciar: Bool, alternarAbrirAoIniciar: @escaping (Bool) -> Void,
          estadoInicial: EstadoBarra = .descarregando, paraFoto: Bool = false) {
@@ -64,7 +68,7 @@ struct JanelaPreferencias: View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 titulo("Item da barra de menus")
-                dica("Monte o desenho de cada estado. Clique numa peça para tirá-la; arraste para mudar a ordem.")
+                dica("Monte o desenho de cada estado. Clique numa peça para tirá-la; arraste para mudar a ordem. Com \"Duas linhas\", cada linha tem as suas peças.")
             }
             RotuloSecao("Formato")
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
@@ -78,7 +82,7 @@ struct JanelaPreferencias: View {
     private func ladrilhoFormato(_ formato: FormatoBarra) -> some View {
         let selecionado = ajustes.formatoBarra == formato
         let hex = selecionado ? estilo.primeiroPlanoSelecionado.hexString : (estilo.texto?.hexString ?? "#F5F5F5")
-        let cfg = ConfigEstado(pecas: formato.pecas(para: .descarregando), corHex: hex)
+        let cfg = formato.config(para: .descarregando, corHex: hex)
         return Button { ajustes.aplicar(formato) } label: {
             VStack(spacing: 8) {
                 VistaItemBarra(situacao: .exemplo(.descarregando), config: cfg, colorir: true,
@@ -96,33 +100,41 @@ struct JanelaPreferencias: View {
         .accessibilityAddTraits(selecionado ? .isSelected : [])
     }
 
+    private func emDuas(_ estado: EstadoBarra, _ cfg: ConfigEstado) -> Bool {
+        cfg.duasLinhas || editandoDuas.contains(estado)
+    }
+
     private func linhaEstado(_ estado: EstadoBarra) -> some View {
         let cfg = ajustes.config(estado)
         let cor = Color(hex: cfg.corHex)
         let situacao = Situacao.exemplo(estado)
         let isAberto = aberto == estado
+        let duas = emDuas(estado, cfg)
         return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 12) {
-                Circle().fill(cor).frame(width: 10, height: 10)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(estado.titulo).font(.system(size: 15, weight: .semibold))
-                    Text(estado.dica).font(.system(size: 12)).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 12) {
+                    Circle().fill(cor).frame(width: 10, height: 10)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(estado.titulo).font(.system(size: 15, weight: .semibold))
+                        Text(estado.dica).font(.system(size: 12)).foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 8)
+                    if !duas {
+                        listaPecas(estado: estado, linha: .cima, cfg: cfg, situacao: situacao)
+                    }
+                    chaveDuasLinhas(estado, ligada: duas)
+                    Button { aberto = isAberto ? nil : estado } label: {
+                        Circle().fill(cor).frame(width: 26, height: 26)
+                            .overlay(Circle().strokeBorder(Color.primary.opacity(0.25), lineWidth: 2))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Cor de \(estado.titulo)")
+                    if !duas { botaoMais(estado, .cima, aberto: isAberto, rotulo: "Adicionar peça em \(estado.titulo)") }
                 }
-                Spacer(minLength: 8)
-                listaPecas(estado: estado, cfg: cfg, situacao: situacao)
-                Button { aberto = isAberto ? nil : estado } label: {
-                    Circle().fill(cor).frame(width: 26, height: 26)
-                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.25), lineWidth: 2))
+                if duas {
+                    faixaDaLinha("Linha de cima", estado: estado, linha: .cima, cfg: cfg, situacao: situacao, isAberto: isAberto)
+                    faixaDaLinha("Linha de baixo", estado: estado, linha: .baixo, cfg: cfg, situacao: situacao, isAberto: isAberto)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Cor de \(estado.titulo)")
-                Button { aberto = isAberto ? nil : estado } label: {
-                    Image(systemName: "plus").font(.system(size: 13, weight: .bold))
-                        .frame(width: 34, height: 34)
-                        .background(Circle().fill(Color.primary.opacity(0.08)))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Adicionar peça em \(estado.titulo)")
             }
             .padding(.horizontal, 12).padding(.vertical, 10)
             .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(estilo.cartao))
@@ -136,10 +148,49 @@ struct JanelaPreferencias: View {
         }
     }
 
-    private func listaPecas(estado: EstadoBarra, cfg: ConfigEstado, situacao: Situacao) -> some View {
+    private func faixaDaLinha(_ nome: String, estado: EstadoBarra, linha: LinhaPeca, cfg: ConfigEstado,
+                              situacao: Situacao, isAberto: Bool) -> some View {
+        HStack(spacing: 12) {
+            Text(nome).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+            Spacer(minLength: 8)
+            listaPecas(estado: estado, linha: linha, cfg: cfg, situacao: situacao)
+            botaoMais(estado, linha, aberto: isAberto && linhaAberta == linha, rotulo: "Adicionar peça na \(nome.lowercased()) de \(estado.titulo)")
+        }
+    }
+
+    private func botaoMais(_ estado: EstadoBarra, _ linha: LinhaPeca, aberto isAberto: Bool, rotulo: String) -> some View {
+        Button {
+            if isAberto { aberto = nil } else { aberto = estado; linhaAberta = linha }
+        } label: {
+            Image(systemName: "plus").font(.system(size: 13, weight: .bold))
+                .frame(width: 34, height: 34)
+                .background(Circle().fill(Color.primary.opacity(isAberto ? 0.18 : 0.08)))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(rotulo)
+    }
+
+    private func chaveDuasLinhas(_ estado: EstadoBarra, ligada: Bool) -> some View {
+        Button { alternarDuasLinhas(estado, ligar: !ligada) } label: {
+            Text("Duas linhas")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(ligada ? estilo.primeiroPlanoSelecionado : Color.primary)
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(Capsule().fill(ligada ? estilo.destaque : Color.primary.opacity(0.08)))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Duas linhas em \(estado.titulo)")
+        .accessibilityAddTraits(ligada ? .isSelected : [])
+    }
+
+    private func listaPecas(estado: EstadoBarra, linha: LinhaPeca, cfg: ConfigEstado, situacao: Situacao) -> some View {
         let cor = Color(hex: cfg.corHex)
+        let pecas = cfg.pecas(em: linha)
         return HStack(spacing: 2) {
-            ForEach(Array(cfg.pecas.enumerated()), id: \.offset) { i, peca in
+            if pecas.isEmpty {
+                Text("vazia").font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+            ForEach(Array(pecas.enumerated()), id: \.offset) { i, peca in
                 let miniatura = MiniaturaPeca(peca: peca, situacao: situacao, cor: cor, casas: ajustes.casasDecimais,
                                               sentido: ajustes.sentido, mostrarTitulo: false)
                     .padding(.horizontal, 3)
@@ -149,15 +200,16 @@ struct JanelaPreferencias: View {
                 if paraFoto {
                     miniatura
                 } else {
-                    Button { tirar(i, de: estado) } label: { miniatura }
+                    Button { tirar(i, de: estado, linha) } label: { miniatura }
                         .buttonStyle(.plain)
                         .accessibilityLabel("Tirar \(peca.titulo)")
                         .onDrag {
-                            arrastando = ArrastoPeca(estado: estado, indice: i)
+                            arrastando = ArrastoPeca(estado: estado, linha: linha, indice: i)
                             return NSItemProvider(object: peca.rawValue as NSString)
                         }
                         .onDrop(of: [UTType.text], delegate: SoltarPeca(
-                            estado: estado, alvo: i, arrastando: $arrastando, mover: { de, para in mover(de, para, em: estado) }))
+                            estado: estado, linha: linha, alvo: i, arrastando: $arrastando,
+                            mover: { de, para in mover(de, para, em: estado, linha) }))
                 }
             }
         }
@@ -165,10 +217,7 @@ struct JanelaPreferencias: View {
         .frame(minWidth: 60, minHeight: 34, alignment: .trailing)
         .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.black.opacity(estilo.scheme == .light ? 0.06 : 0.28)))
         // Soltar fora de uma peça (no fundo da linha) também encerra o arrasto.
-        .onDrop(of: [UTType.text], isTargeted: nil) { _ in
-            arrastando = nil
-            return false
-        }
+        .modifier(SoltarNoFundo(ativo: !paraFoto) { arrastando = nil })
     }
 
     private func paleta(estado: EstadoBarra, cfg: ConfigEstado, situacao: Situacao) -> some View {
@@ -178,7 +227,7 @@ struct JanelaPreferencias: View {
         for h in amostras where !unicas.contains(h) { unicas.append(h) }
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
-                RotuloSecao("Adicionar em \(estado.titulo)")
+                RotuloSecao(emDuas(estado, cfg) ? "Adicionar em \(estado.titulo), \(linhaAberta == .cima ? "linha de cima" : "linha de baixo")" : "Adicionar em \(estado.titulo)")
                 Spacer()
                 Text("Prévia").font(.system(size: 11)).foregroundStyle(.secondary)
                 VistaItemBarra(situacao: situacao, config: cfg, colorir: true, casas: ajustes.casasDecimais,
@@ -188,8 +237,8 @@ struct JanelaPreferencias: View {
                     .environment(\.colorScheme, .dark)
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
-                ForEach(Peca.allCases) { peca in
-                    Button { acrescentar(peca, em: estado) } label: {
+                ForEach(Peca.allCases.filter { $0 != .ritmoWatts }) { peca in
+                    Button { acrescentar(peca, em: estado, linhaAberta) } label: {
                         HStack(spacing: 10) {
                             MiniaturaPeca(peca: peca, situacao: situacao, cor: cor, casas: ajustes.casasDecimais,
                                           sentido: ajustes.sentido, mostrarTitulo: false)
@@ -236,18 +285,38 @@ struct JanelaPreferencias: View {
         ajustes.configs[estado] = c
     }
 
-    private func tirar(_ indice: Int, de estado: EstadoBarra) {
-        atualizar(estado) { if $0.pecas.indices.contains(indice) { $0.pecas.remove(at: indice) } }
+    private func tirar(_ indice: Int, de estado: EstadoBarra, _ linha: LinhaPeca) {
+        atualizar(estado) { c in
+            c.alterar(linha) { if $0.indices.contains(indice) { $0.remove(at: indice) } }
+        }
     }
 
-    private func acrescentar(_ peca: Peca, em estado: EstadoBarra) {
-        atualizar(estado) { $0.pecas.append(peca) }
+    private func acrescentar(_ peca: Peca, em estado: EstadoBarra, _ linha: LinhaPeca) {
+        atualizar(estado) { $0.alterar(linha) { $0.append(peca) } }
     }
 
-    private func mover(_ de: Int, _ para: Int, em estado: EstadoBarra) {
-        atualizar(estado) {
-            guard $0.pecas.indices.contains(de), $0.pecas.indices.contains(para) else { return }
-            $0.pecas.move(fromOffsets: [de], toOffset: para > de ? para + 1 : para)
+    private func mover(_ de: Int, _ para: Int, em estado: EstadoBarra, _ linha: LinhaPeca) {
+        atualizar(estado) { c in
+            c.alterar(linha) {
+                guard $0.indices.contains(de), $0.indices.contains(para) else { return }
+                $0.move(fromOffsets: [de], toOffset: para > de ? para + 1 : para)
+            }
+        }
+    }
+
+    /// Ligar abre a faixa de baixo (vazia até entrar uma peça); desligar junta tudo numa linha só.
+    private func alternarDuasLinhas(_ estado: EstadoBarra, ligar: Bool) {
+        if ligar {
+            editandoDuas.insert(estado)
+            linhaAberta = .baixo
+            aberto = estado
+        } else {
+            editandoDuas.remove(estado)
+            linhaAberta = .cima
+            atualizar(estado) {
+                $0.pecas += $0.pecasBaixo
+                $0.pecasBaixo = []
+            }
         }
     }
 
@@ -504,20 +573,22 @@ private struct ChaveDesenhada: View {
 
 private struct ArrastoPeca: Equatable {
     var estado: EstadoBarra
+    var linha: LinhaPeca
     var indice: Int
 }
 
 private struct SoltarPeca: DropDelegate {
     let estado: EstadoBarra
+    let linha: LinhaPeca
     let alvo: Int
     @Binding var arrastando: ArrastoPeca?
     let mover: (Int, Int) -> Void
 
     func dropEntered(info: DropInfo) {
-        // Solta sobre a linha de outro estado: ignora.
-        guard let atual = arrastando, atual.estado == estado, atual.indice != alvo else { return }
+        // Solta sobre outro estado ou outra linha: ignora.
+        guard let atual = arrastando, atual.estado == estado, atual.linha == linha, atual.indice != alvo else { return }
         mover(atual.indice, alvo)
-        arrastando = ArrastoPeca(estado: estado, indice: alvo)
+        arrastando = ArrastoPeca(estado: estado, linha: linha, indice: alvo)
     }
 
     func dropExited(info: DropInfo) {}
@@ -527,5 +598,23 @@ private struct SoltarPeca: DropDelegate {
     func performDrop(info: DropInfo) -> Bool {
         arrastando = nil
         return true
+    }
+}
+
+/// Soltar no fundo da faixa encerra o arrasto. Fora do modo --foto apenas: o ImageRenderer desenha um
+/// aviso amarelo no lugar de views com onDrop.
+private struct SoltarNoFundo: ViewModifier {
+    let ativo: Bool
+    let aoSoltar: () -> Void
+
+    func body(content: Content) -> some View {
+        if ativo {
+            content.onDrop(of: [UTType.text], isTargeted: nil) { _ in
+                aoSoltar()
+                return false
+            }
+        } else {
+            content
+        }
     }
 }

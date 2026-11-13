@@ -220,7 +220,7 @@ private struct DesenhoGlifo: View {
 
 // MARK: - Peças na barra
 
-/// Desenha uma das 15 peças na altura da barra de menus (22 pt). `escala` aumenta tudo (miniaturas).
+/// Desenha uma das 16 peças na altura da barra de menus (22 pt). `escala` aumenta tudo (miniaturas).
 /// `grande` é a variação "empilhada": o valor fica maior para ladear o texto pequeno sobre a bateria.
 struct VistaPeca: View {
     var peca: Peca
@@ -229,11 +229,30 @@ struct VistaPeca: View {
     var casas: Int
     var sentido: SentidoRitmo
     var grande = false
+    /// Quando o item tem duas linhas: o texto usa o tamanho da linha e os desenhos encolhem para ~11 pt.
+    var linha: LinhaPeca? = nil
     var escala: CGFloat = 1
 
     @Environment(\.desenhoModelo) private var modelo
 
-    private var tamanhoTexto: CGFloat { (grande ? 16 : 13) * escala }
+    private var tamanhoTexto: CGFloat {
+        switch linha {
+        case .cima: return 10 * escala
+        case .baixo: return 9 * escala
+        case nil: return (grande ? 16 : 13) * escala
+        }
+    }
+
+    private var pesoTexto: Font.Weight {
+        switch linha {
+        case .cima: return .bold
+        case .baixo: return .medium
+        case nil: return .semibold
+        }
+    }
+
+    /// Escala dos desenhos: em duas linhas cada um encolhe para caber em ~11 pt de altura.
+    private func e(_ fator: CGFloat) -> CGFloat { linha == nil ? escala : escala * fator }
 
     var body: some View {
         conteudo
@@ -245,7 +264,7 @@ struct VistaPeca: View {
     private var conteudo: some View {
         switch peca {
         case .ritmo:
-            texto(situacao.textoRitmo(casas: casas, sentido: sentido, espaco: false))
+            texto(situacao.textoRitmo(casas: casas, sentido: sentido, espaco: linha != nil))
         case .porcentagem:
             texto(Formato.percentual(situacao.leitura.percentual))
         case .tempo:
@@ -254,48 +273,55 @@ struct VistaPeca: View {
             texto(situacao.textoWatts)
         case .ritmoWatts:
             duasLinhas(
-                topo: situacao.semRitmo ? "Na tomada" : situacao.textoRitmo(casas: casas, sentido: sentido, espaco: true),
+                topo: situacao.semRitmo
+                    ? "Na tomada"
+                    : situacao.textoRitmo(casas: casas, sentido: sentido, espaco: true)
+                        + " · " + Formato.percentual(situacao.leitura.percentual),
                 baixo: situacao.semRitmo
                     ? (situacao.estado == .cheia ? "cheia em 100%" : "parado em \(Formato.percentual(situacao.leitura.percentual))")
                     : situacao.textoWattsTempo)
         case .etiquetaValor:
-            VStack(spacing: -1 * escala) {
-                Text("BAT").font(.system(size: 8 * escala, weight: .semibold)).opacity(0.7)
+            VStack(spacing: -1 * e(0.55)) {
+                Text("BAT").font(.system(size: 8 * e(0.55), weight: .semibold)).opacity(0.7)
                 Text(Formato.percentual(situacao.leitura.percentual))
-                    .font(.system(size: 12 * escala, weight: .bold)).monospacedDigit()
+                    .font(.system(size: 12 * e(0.55), weight: .bold)).monospacedDigit()
             }
         case .ritmoSobreBateria:
             textoSobreBateria(situacao.textoRitmo(casas: casas, sentido: sentido, espaco: false))
         case .tempoSobreBateria:
             textoSobreBateria(situacao.textoTempoCurto)
         case .icone:
-            DesenhoGlifo(estado: situacao.estado, cor: cor, altura: 12 * escala)
+            DesenhoGlifo(estado: situacao.estado, cor: cor, altura: 12 * e(0.9))
         case .bateria:
-            HStack(spacing: 4 * escala) {
-                DesenhoGlifo(estado: situacao.estado, cor: cor, altura: 11 * escala)
-                DesenhoBateria(fracao: situacao.fracaoCarga, cor: cor, largura: 24 * escala)
+            HStack(spacing: 4 * e(0.7)) {
+                DesenhoGlifo(estado: situacao.estado, cor: cor, altura: 11 * e(0.7))
+                DesenhoBateria(fracao: situacao.fracaoCarga, cor: cor, largura: 24 * e(0.7))
             }
         case .barraVertical:
-            DesenhoBarraVertical(fracao: situacao.fracaoCarga, cor: cor, altura: 14 * escala)
+            DesenhoBarraVertical(fracao: situacao.fracaoCarga, cor: cor, altura: 14 * e(0.78))
         case .anel:
-            DesenhoAnel(fracao: situacao.fracaoCarga, cor: cor, lado: 15 * escala)
+            DesenhoAnel(fracao: situacao.fracaoCarga, cor: cor, lado: 15 * e(0.72))
         case .velocimetro:
             if situacao.estado == .descarregando || situacao.estado == .alto {
-                DesenhoVelocimetro(ritmo: situacao.ritmoDoItem, cor: cor, lado: 17 * escala)
+                DesenhoVelocimetro(ritmo: situacao.ritmoDoItem, cor: cor, lado: 17 * e(0.64))
             } else {
                 // Carregando vira raio; na tomada vira tomada.
-                DesenhoGlifo(estado: situacao.estado, cor: cor, altura: 13 * escala)
+                DesenhoGlifo(estado: situacao.estado, cor: cor, altura: 13 * e(0.8))
             }
         case .numeroPilula:
             pilula
         case .espacador:
             Color.clear.frame(width: 6 * escala, height: 1)
+        case .separador:
+            Text("·")
+                .font(.system(size: tamanhoTexto, weight: .bold))
+                .opacity(0.7)
         }
     }
 
     private func texto(_ s: String) -> some View {
         Text(s)
-            .font(.system(size: tamanhoTexto, weight: .semibold))
+            .font(.system(size: tamanhoTexto, weight: pesoTexto))
             .monospacedDigit()
             .lineLimit(1)
     }
@@ -309,25 +335,25 @@ struct VistaPeca: View {
     }
 
     private func textoSobreBateria(_ s: String) -> some View {
-        VStack(spacing: 1.3 * escala) {
+        VStack(spacing: 1.3 * e(0.62)) {
             Text(s)
-                .font(.system(size: 8.5 * escala, weight: .bold))
+                .font(.system(size: 8.5 * e(0.62), weight: .bold))
                 .monospacedDigit()
                 .lineLimit(1)
-            DesenhoBateria(fracao: situacao.fracaoCarga, cor: cor, largura: 18 * escala)
+            DesenhoBateria(fracao: situacao.fracaoCarga, cor: cor, largura: 18 * e(0.62))
         }
     }
 
     private var pilula: some View {
         let numero = Text("\(situacao.leitura.percentual)")
-            .font(.system(size: 10 * escala, weight: .heavy))
+            .font(.system(size: 10 * e(0.8), weight: .heavy))
             .monospacedDigit()
         return numero
             .foregroundStyle(modelo ? Color.black : Color(hex: "#17110A"))
             .blendMode(modelo ? .destinationOut : .normal)
-            .padding(.horizontal, 4 * escala)
-            .padding(.vertical, 1 * escala)
-            .background(RoundedRectangle(cornerRadius: 4 * escala, style: .continuous).fill(cor))
+            .padding(.horizontal, 4 * e(0.8))
+            .padding(.vertical, 1 * e(0.8))
+            .background(RoundedRectangle(cornerRadius: 4 * e(0.8), style: .continuous).fill(cor))
             .compositingGroup()
     }
 }

@@ -40,17 +40,17 @@ enum EstadoBarra: String, CaseIterable, Codable, Sendable, Identifiable {
     }
 }
 
-/// As 15 peças que se combinam na barra, na ordem da paleta do desenho.
+/// As 16 peças que se combinam na barra, na ordem da paleta do desenho.
 enum Peca: String, CaseIterable, Codable, Sendable, Identifiable {
     case ritmo, ritmoWatts, ritmoSobreBateria, tempoSobreBateria, porcentagem, tempo, watts
-    case etiquetaValor, icone, bateria, barraVertical, anel, velocimetro, numeroPilula, espacador
+    case etiquetaValor, icone, bateria, barraVertical, anel, velocimetro, numeroPilula, espacador, separador
 
     var id: String { rawValue }
 
     var titulo: String {
         switch self {
         case .ritmo: return "Ritmo %/h"
-        case .ritmoWatts: return "Ritmo e watts"
+        case .ritmoWatts: return "Ritmo, %, watts e tempo"
         case .ritmoSobreBateria: return "Ritmo sobre a bateria"
         case .tempoSobreBateria: return "Tempo sobre a bateria"
         case .porcentagem: return "Porcentagem"
@@ -64,6 +64,7 @@ enum Peca: String, CaseIterable, Codable, Sendable, Identifiable {
         case .velocimetro: return "Velocímetro"
         case .numeroPilula: return "Número na pílula"
         case .espacador: return "Espaçador"
+        case .separador: return "Separador ·"
         }
     }
 
@@ -85,6 +86,7 @@ enum Peca: String, CaseIterable, Codable, Sendable, Identifiable {
         case .velocimetro: return "gauge.with.needle"
         case .numeroPilula: return "capsule"
         case .espacador: return "arrow.left.and.right"
+        case .separador: return "circle.fill"
         }
     }
 }
@@ -112,7 +114,7 @@ enum FormatoBarra: String, CaseIterable, Codable, Sendable, Identifiable {
         case .icone: return "A bateria enche com o %; seta, raio ou tomada dizem o que está acontecendo."
         case .valor: return "Só o ritmo em %/h, sem desenho."
         case .iconeValor: return "Bateria e ritmo lado a lado."
-        case .duasLinhas: return "Ritmo em cima; watts e tempo embaixo, como o iStat."
+        case .duasLinhas: return "Ritmo e % em cima; watts e tempo embaixo, como o iStat."
         case .velocimetro: return "O ponteiro sobe conforme o gasto; carregando vira raio."
         }
     }
@@ -126,16 +128,61 @@ enum FormatoBarra: String, CaseIterable, Codable, Sendable, Identifiable {
         case .icone: return [.bateria]
         case .valor: return semRitmo ? [.porcentagem] : [.ritmo]
         case .iconeValor: return semRitmo ? [.bateria, .porcentagem] : [.bateria, .ritmo]
-        case .duasLinhas: return [.ritmoWatts]
+        case .duasLinhas: return semRitmo ? [.porcentagem] : [.ritmo, .separador, .porcentagem]
         case .velocimetro: return [.velocimetro, semRitmo ? .porcentagem : .ritmo]
         }
     }
+
+    /// Linha de baixo do formato (vazia = uma linha só). Só o Duas linhas usa.
+    func pecasBaixo(para estado: EstadoBarra) -> [Peca] {
+        let semRitmo = estado == .parado || estado == .cheia
+        switch self {
+        case .duasLinhas: return semRitmo ? [.tempo] : [.watts, .separador, .tempo]
+        default: return []
+        }
+    }
+
+    /// Predefinição completa do estado, com a cor dada.
+    func config(para estado: EstadoBarra, corHex: String) -> ConfigEstado {
+        ConfigEstado(pecas: pecas(para: estado), pecasBaixo: pecasBaixo(para: estado), corHex: corHex)
+    }
+}
+
+/// Qual das duas linhas do item.
+enum LinhaPeca: Sendable {
+    case cima, baixo
 }
 
 /// Peças e cor de um estado.
 struct ConfigEstado: Codable, Sendable, Equatable {
     var pecas: [Peca]
+    /// Linha de baixo; vazia = o item tem uma linha só.
+    var pecasBaixo: [Peca]
     var corHex: String
+
+    init(pecas: [Peca], pecasBaixo: [Peca] = [], corHex: String) {
+        self.pecas = pecas
+        self.pecasBaixo = pecasBaixo
+        self.corHex = corHex
+    }
+
+    private enum CodingKeys: String, CodingKey { case pecas, pecasBaixo, corHex }
+
+    /// Configs salvas antes das duas linhas não têm `pecasBaixo`.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        pecas = try c.decode([Peca].self, forKey: .pecas)
+        pecasBaixo = try c.decodeIfPresent([Peca].self, forKey: .pecasBaixo) ?? []
+        corHex = try c.decode(String.self, forKey: .corHex)
+    }
+
+    var duasLinhas: Bool { !pecasBaixo.isEmpty }
+
+    func pecas(em linha: LinhaPeca) -> [Peca] { linha == .cima ? pecas : pecasBaixo }
+
+    mutating func alterar(_ linha: LinhaPeca, _ mudar: (inout [Peca]) -> Void) {
+        if linha == .cima { mudar(&pecas) } else { mudar(&pecasBaixo) }
+    }
 }
 
 // MARK: - Preferências em forma de tipo
