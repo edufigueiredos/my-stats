@@ -341,6 +341,7 @@ private extension Foto {
         png(RaizTematica(temaFixo: .gold) { PainelMemoria(leituras: leituras, series: series, acoes: acoes) }, "painel-memoria", em: url)
         png(RaizTematica(temaFixo: .gold) { PainelDisco(leituras: leituras, series: series, acoes: acoes) }, "painel-disco", em: url)
         png(RaizTematica(temaFixo: .gold) { PainelRede(leituras: leituras, series: series, acoes: acoes) }, "painel-rede", em: url)
+        png(RaizTematica(temaFixo: .gold) { PainelCalendario(leituras: leituras, acoes: acoes) }, "painel-calendario", em: url)
         png(RaizTematica(temaFixo: .gold) {
             PainelSensores(leituras: leituras, series: series, acoes: acoes,
                            avisoTitulo: "Avisar acima de 95 °C na CPU", avisoDica: "Por mais de 2 min seguidos. Muda nas Preferências.")
@@ -379,6 +380,12 @@ private extension Foto {
                                 alternarAbrirAoIniciar: { _ in }, paraFoto: true,
                                 pecaSelecionadaInicial: (.cima, .temperatura))
         }, "preferencias-modulos-sensores", em: url)
+        png(RaizTematica(temaFixo: .gold) {
+            PreferenciasComMenu(ajustes: ajustesBateria, ajustesModulos: todos, navegacao: NavegacaoPreferencias(pagina: .modulo(.calendario)),
+                                leituras: leituras, series: series, situacao: .exemplo(.parado), abrirAoIniciar: true,
+                                alternarAbrirAoIniciar: { _ in }, paraFoto: true,
+                                pecaSelecionadaInicial: (.cima, .data))
+        }, "preferencias-modulos-calendario", em: url)
     }
 }
 
@@ -468,6 +475,27 @@ private struct QuadroFormatosModulos: View {
                             .frame(width: 198, height: 56)
                             .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(corBarraModulos))
                     }
+                }
+            }
+            // O Calendário tem formatos próprios (data e hora, próximo compromisso).
+            HStack(spacing: 8) {
+                Color.clear.frame(width: 150, height: 1)
+                ForEach(FormatoModulo.disponiveis(.calendario), id: \.self) { f in
+                    Text(f.titulo).font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.75))
+                        .frame(width: 198, alignment: .leading)
+                }
+            }
+            .padding(.top, 6)
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(Modulo.calendario.titulo).font(.system(size: 15, weight: .bold))
+                    Text(Modulo.calendario.dica).font(.system(size: 12)).foregroundStyle(.white.opacity(0.62))
+                }
+                .frame(width: 150, alignment: .leading)
+                ForEach(FormatoModulo.disponiveis(.calendario), id: \.self) { f in
+                    itemModulo(.calendario, f.config(para: .calendario), leituras, series, escala: 1.5)
+                        .frame(width: 198, height: 56)
+                        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(corBarraModulos))
                 }
             }
         }

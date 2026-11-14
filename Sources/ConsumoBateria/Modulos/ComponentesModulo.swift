@@ -23,6 +23,9 @@ struct AcoesModulo {
     var ejetar: (URL) -> Void = { _ in }
     var buscarIPPublico: @MainActor () async -> String? = { nil }
     var sair: () -> Void = {}
+    /// Calendário: pede a permissão do sistema e avisa qual mês o painel mostra.
+    var permitirCalendario: () -> Void = {}
+    var mesCalendario: (Date) -> Void = { _ in }
 
     static var nenhuma: AcoesModulo { AcoesModulo() }
 }
@@ -90,6 +93,11 @@ private struct FormaIcone: Shape {
             arco(&p, cx: 12, cy: cyBulbo, r: 4, de: a, ate: .pi - a + 0, novo: false)
             p.closeSubpath()
             linha(&p, 12, 9, 12, 17)
+        case .calendario?:
+            p.addRoundedRect(in: CGRect(x: 4, y: 5, width: 16, height: 15), cornerSize: CGSize(width: 3, height: 3))
+            linha(&p, 4, 10, 20, 10)
+            linha(&p, 8, 3, 8, 7)
+            linha(&p, 16, 3, 16, 7)
         }
         let k = min(rect.width, rect.height) / 24
         return p.applying(CGAffineTransform(scaleX: k, y: k)).offsetBy(dx: rect.minX, dy: rect.minY)

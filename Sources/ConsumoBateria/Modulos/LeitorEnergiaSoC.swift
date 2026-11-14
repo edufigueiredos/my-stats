@@ -84,10 +84,12 @@ final class LeitorEnergiaSoC {
             else if nome.hasPrefix("DRAM") { dram += w; tem.dram = true }
         }
         var r = EnergiaSoC()
-        if tem.cpu { r.cpuW = cpu }
+        // No M5 (macOS 27) os canais de energia da CPU e da DRAM existem mas ficam sempre em zero: só a GPU é medida.
+        // Zero aí quer dizer "sem leitura" (a tela mostra outra coisa), não 0 W.
+        if tem.cpu, cpu > 0 { r.cpuW = cpu }
         if tem.gpu { r.gpuW = gpu }
         if tem.ane { r.aneW = ane }
-        if tem.dram { r.dramW = dram }
+        if tem.dram, dram > 0 { r.dramW = dram }
         if let gpuMHz { r.gpuMHz = gpuMHz; r.gpuMaxMHz = frequenciasGPU.max() }
         r.gpuAtivo = gpuAtivo
         return r == EnergiaSoC() ? nil : r

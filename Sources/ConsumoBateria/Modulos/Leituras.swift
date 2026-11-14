@@ -6,7 +6,7 @@ import Foundation
 // MARK: - Módulos
 
 enum Modulo: String, CaseIterable, Codable, Sendable, Identifiable {
-    case cpu, gpu, memoria, disco, rede, sensores
+    case cpu, gpu, memoria, disco, rede, sensores, calendario
 
     var id: String { rawValue }
 
@@ -18,6 +18,7 @@ enum Modulo: String, CaseIterable, Codable, Sendable, Identifiable {
         case .disco: return "Disco"
         case .rede: return "Rede"
         case .sensores: return "Sensores"
+        case .calendario: return "Calendário"
         }
     }
 
@@ -26,6 +27,7 @@ enum Modulo: String, CaseIterable, Codable, Sendable, Identifiable {
         switch self {
         case .disco: return "do Disco"
         case .sensores: return "dos Sensores"
+        case .calendario: return "do Calendário"
         default: return "da \(titulo)"
         }
     }
@@ -39,6 +41,7 @@ enum Modulo: String, CaseIterable, Codable, Sendable, Identifiable {
         case .disco: return "SSD"
         case .rede: return "PING"
         case .sensores: return "CPU °C"
+        case .calendario: return "DATA"
         }
     }
 
@@ -51,6 +54,7 @@ enum Modulo: String, CaseIterable, Codable, Sendable, Identifiable {
         case .disco: return "ocupado ou leitura/escrita"
         case .rede: return "latência ou velocidade"
         case .sensores: return "temperatura e potência"
+        case .calendario: return "data, hora e compromissos"
         }
     }
 
@@ -61,6 +65,7 @@ enum Modulo: String, CaseIterable, Codable, Sendable, Identifiable {
         case .disco: return "Abrir Utilitário de Disco"
         case .rede: return "Abrir ajustes de Rede"
         case .sensores: return "Ver todos os sensores"
+        case .calendario: return "Abrir Calendário"
         }
     }
 
@@ -70,8 +75,32 @@ enum Modulo: String, CaseIterable, Codable, Sendable, Identifiable {
         case .cpu, .gpu, .memoria, .sensores: return "Monitor de Atividade"
         case .disco: return "Utilitário de Disco"
         case .rede: return "Ajustes de Rede"
+        case .calendario: return "Calendário"
         }
     }
+}
+
+// MARK: - Calendário
+
+enum AutorizacaoCalendario: Sendable, Equatable {
+    case naoPedida, negada, permitida
+}
+
+/// Um compromisso de hoje em diante. Só vive na memória: nada disto é gravado em disco nem vai para log.
+struct Compromisso: Sendable, Equatable, Identifiable {
+    var id: String
+    var titulo: String
+    var inicio: Date
+    var fim: Date
+    var diaInteiro: Bool
+    /// Cor da agenda, "#RRGGBB".
+    var corHex: String
+    var local: String? = nil
+}
+
+struct LeituraCalendario: Sendable, Equatable {
+    var autorizacao: AutorizacaoCalendario = .naoPedida
+    var compromissos: [Compromisso] = []
 }
 
 // MARK: - Processos
@@ -278,6 +307,7 @@ struct LeiturasModulos: Sendable, Equatable {
     var rede: LeituraRede? = nil
     var sensores: LeituraSensores? = nil
     var energia: EnergiaSoC? = nil
+    var calendario: LeituraCalendario? = nil
     var processos = ProcessosModulos()
 
     static let vazio = LeiturasModulos(data: Date(timeIntervalSince1970: 0))
@@ -364,7 +394,32 @@ struct LeiturasModulos: Sendable, Equatable {
         return LeiturasModulos(
             data: agora, ligadoDesde: agora.addingTimeInterval(-(3 * 86_400 + 4 * 3_600)),
             cpu: cpu, gpu: gpu, memoria: memoria, disco: disco, rede: rede, sensores: sensores, energia: energia,
-            processos: processos)
+            calendario: calendarioExemplo(agora), processos: processos)
+    }
+}
+
+extension LeiturasModulos {
+    /// Compromissos fictícios (hoje e os dias seguintes) para o --foto.
+    static func calendarioExemplo(_ agora: Date) -> LeituraCalendario {
+        let cal = Calendar.current
+        let hoje = cal.startOfDay(for: agora)
+        func em(_ dias: Int, _ h: Int, _ min: Int = 0) -> Date {
+            let d = cal.date(byAdding: .day, value: dias, to: hoje) ?? hoje
+            return cal.date(bySettingHour: h, minute: min, second: 0, of: d) ?? d
+        }
+        func dia(_ dias: Int) -> (Date, Date) { (em(dias, 0), em(dias + 1, 0)) }
+        let amanha = dia(1)
+        let lista: [Compromisso] = [
+            Compromisso(id: "a", titulo: "Reunião de equipe", inicio: em(0, 9), fim: em(0, 10), diaInteiro: false, corHex: "#4C8DF6"),
+            Compromisso(id: "b", titulo: "Almoço", inicio: em(0, 12, 30), fim: em(0, 13, 30), diaInteiro: false, corHex: "#34C759"),
+            Compromisso(id: "c", titulo: "Dentista", inicio: em(0, 16), fim: em(0, 17), diaInteiro: false, corHex: "#FF9F0A",
+                        local: "Rua das Flores, 120"),
+            Compromisso(id: "d", titulo: "Aniversário da Ana", inicio: amanha.0, fim: amanha.1, diaInteiro: true, corHex: "#AF52DE"),
+            Compromisso(id: "e", titulo: "Revisão do projeto", inicio: em(2, 14), fim: em(2, 15, 30), diaInteiro: false, corHex: "#4C8DF6",
+                        local: "Sala 3"),
+            Compromisso(id: "f", titulo: "Academia", inicio: em(3, 7), fim: em(3, 8), diaInteiro: false, corHex: "#FF3B30"),
+        ]
+        return LeituraCalendario(autorizacao: .permitida, compromissos: lista)
     }
 }
 

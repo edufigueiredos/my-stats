@@ -69,7 +69,7 @@ private struct PainelAoVivo: View {
 
     var body: some View {
         PainelBateria(situacao: monitor.situacao, ajustes: .compartilhado, acoes: acoes,
-                      alturaMaxima: NSScreen.main?.visibleFrame.height ?? 700)
+                      alturaMaxima: TelaDoClique.compartilhada.alturaVisivel)
     }
 }
 

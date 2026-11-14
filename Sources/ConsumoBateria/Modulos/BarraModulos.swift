@@ -20,7 +20,7 @@ struct PopoverModulosAoVivo: View {
     let pegarSituacao: () -> Situacao?
     let acoes: AcoesModulo
 
-    private var altura: CGFloat { NSScreen.main?.visibleFrame.height ?? 700 }
+    private var altura: CGFloat { TelaDoClique.compartilhada.alturaVisivel }
 
     /// Texto do cartão de aviso do painel de Sensores, vindo do aviso de temperatura configurado.
     private var avisoSensores: (titulo: String?, dica: String?) {
@@ -55,6 +55,8 @@ struct PopoverModulosAoVivo: View {
             PainelDisco(leituras: l, series: s, acoes: acoes, alturaMaxima: altura)
         case .rede?:
             PainelRede(leituras: l, series: s, acoes: acoes, alturaMaxima: altura)
+        case .calendario?:
+            PainelCalendario(leituras: l, acoes: acoes, alturaMaxima: altura)
         case .sensores?:
             let aviso = avisoSensores
             PainelSensores(leituras: l, series: s, acoes: acoes, avisoTitulo: aviso.titulo, avisoDica: aviso.dica,
@@ -237,8 +239,11 @@ final class ControladorModulos: NSObject, NSPopoverDelegate {
         }
         navegacao.tela = tela
         botaoAncora = botao
-        // Abre já com a altura que este painel teve da última vez, em vez da do painel anterior.
-        if let h = navegacao.alturas.total[navegacao.chave] { popover.contentSize = NSSize(width: 400, height: h) }
+        TelaDoClique.compartilhada.usar(botao)
+        // Abre já com a altura que este painel teve da última vez, em vez da do painel anterior (nunca maior que a tela).
+        if let h = navegacao.alturas.total[navegacao.chave] {
+            popover.contentSize = NSSize(width: 400, height: min(h, TelaDoClique.compartilhada.alturaVisivel - 40))
+        }
         popover.contentViewController?.view.layoutSubtreeIfNeeded()
         popover.show(relativeTo: botao.bounds, of: botao, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
@@ -291,6 +296,8 @@ final class ControladorModulos: NSObject, NSPopoverDelegate {
         }
         a.buscarIPPublico = { await LeitorRede.buscarIPPublico() }
         a.sair = { NSApp.terminate(nil) }
+        a.permitirCalendario = { [weak self] in self?.monitor.pedirPermissaoCalendario() }
+        a.mesCalendario = { [weak self] d in self?.monitor.mostrarMesCalendario(d) }
         return a
     }
 
@@ -302,6 +309,9 @@ final class ControladorModulos: NSObject, NSPopoverDelegate {
         case .disco: abrirPorId("com.apple.DiskUtility")
         case .rede:
             if let url = URL(string: "x-apple.systempreferences:com.apple.Network-Settings.extension") { espaco.open(url) }
+        case .calendario:
+            espaco.openApplication(at: URL(fileURLWithPath: "/System/Applications/Calendar.app"),
+                                   configuration: NSWorkspace.OpenConfiguration())
         }
     }
 

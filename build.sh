@@ -16,12 +16,11 @@ cp ".build/release/$NOME" "$APP/Contents/MacOS/$NOME"
 cp Info.plist "$APP/Contents/Info.plist"
 cp Recursos/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"   # gerado por scripts/gerar-icone.swift
 
-# Sparkle (atualização automática, docs/atualizacao.md): o framework vai para Contents/Frameworks e o binário aprende a achá-lo.
+# Sparkle (atualização automática, docs/atualizacao.md): o framework vai para Contents/Frameworks (o rpath vem do Package.swift).
 # Os serviços XPC do Sparkle só servem a apps em sandbox; o My Stats não é, então saem.
 FW="$APP/Contents/Frameworks/Sparkle.framework"
 ditto ".build/release/Sparkle.framework" "$FW"
 rm -rf "$FW/Versions/B/XPCServices" "$FW/XPCServices"
-install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP/Contents/MacOS/$NOME"
 cp .build/checkouts/Sparkle/LICENSE "$APP/Contents/Resources/Sparkle-LICENSE.txt" 2>/dev/null \
   || cp .build/artifacts/sparkle/Sparkle/LICENSE "$APP/Contents/Resources/Sparkle-LICENSE.txt" 2>/dev/null || true
 
@@ -30,7 +29,7 @@ if [[ "$ASSINAR" == "-" ]]; then OPCOES=(); else OPCOES=(--options runtime --tim
 codesign --force "${OPCOES[@]}" --sign "$ASSINAR" "$FW/Versions/B/Autoupdate"
 codesign --force "${OPCOES[@]}" --sign "$ASSINAR" "$FW/Versions/B/Updater.app"
 codesign --force "${OPCOES[@]}" --sign "$ASSINAR" "$FW"
-codesign --force "${OPCOES[@]}" --sign "$ASSINAR" "$APP"
+codesign --force "${OPCOES[@]}" --entitlements Recursos/MyStats.entitlements --sign "$ASSINAR" "$APP"   # acesso ao Calendário
 codesign --verify --strict "$APP"
 echo "Pronto: $APP"
 

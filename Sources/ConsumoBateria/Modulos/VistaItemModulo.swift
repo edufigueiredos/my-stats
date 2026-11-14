@@ -14,6 +14,7 @@ func serieDoItem(_ m: Modulo, series: SeriesModulos) -> [Double] {
     case .disco: metrica = .discoLeitura
     case .rede: metrica = .redeLatencia
     case .sensores: metrica = .tempCPU
+    case .calendario: return []
     }
     return series.ultimos(metrica, 12)
 }

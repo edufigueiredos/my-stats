@@ -206,7 +206,7 @@ struct PainelCPU: View {
 
             AnelCentroPainel(fracao: (cpu?.uso ?? 0) / 100,
                              centro: Formato.temperatura(leituras.sensores?.cpuC, curta: true),
-                             sub: leituras.energia?.cpuW.map { Formato.numero($0, casas: $0 < 10 ? 1 : 0) + " W" } ?? Formato.semDado)
+                             sub: leituras.energia?.cpuW.map { Formato.numero($0, casas: $0 < 10 ? 1 : 0) + " W" } ?? "CPU")
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(estilo.cartao))
@@ -336,7 +336,8 @@ struct PainelCPU: View {
             temp += " · máx. " + Formato.temperatura(maximo, curta: false)
         }
         r.append(("Temperatura", temp))
-        r.append(("Potência da CPU", leituras.energia?.cpuW.map { Formato.numero($0, casas: $0 < 10 ? 1 : 0) + " W" } ?? Formato.semDado))
+        // Sem leitura de potência da CPU (caso do M5), a linha some em vez de mostrar "—".
+        if let w = leituras.energia?.cpuW { r.append(("Potência da CPU", Formato.numero(w, casas: w < 10 ? 1 : 0) + " W")) }
         if let n = cpu?.processos {
             var t = Formato.inteiro(n)
             if let th = cpu?.threads { t += " · \(Formato.inteiro(th)) threads" }

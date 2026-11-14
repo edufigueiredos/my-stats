@@ -22,6 +22,10 @@
 	<string>14.0</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>O My Stats mostra seus compromissos no painel do Calendário. Nada sai do seu Mac.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>O My Stats mostra seus compromissos no painel do Calendário. Nada sai do seu Mac.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Licença Apache 2.0</string>
 	<key>SUEnableAutomaticChecks</key>

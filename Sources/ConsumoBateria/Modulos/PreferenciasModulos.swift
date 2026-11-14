@@ -398,7 +398,7 @@ struct PaginaModuloPrefs: View {
                     cartaoLinha(.cima)
                     cartaoLinha(.baixo)
                     cartaoAoClicar
-                    cartaoAvisos
+                    if !ajuste.avisos.isEmpty { cartaoAvisos }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 cartaoAjuste.frame(width: 300)
@@ -710,16 +710,18 @@ struct PaginaModuloPrefs: View {
                 }
             }
             blocoCor(item)
-            linhaAjuste("Faixas") {
-                valorPilula("\(numeroCurto(faixa.medio)) · \(numeroCurto(faixa.alto)) \(unidadeFaixa)", dica: "") {}
-            }
-            linhaAjuste("  Médio") {
-                botaoPasso("minus", rotulo: "Diminuir faixa média") { mudarFaixa(medio: -passoFaixa) }
-                botaoPasso("plus", rotulo: "Aumentar faixa média") { mudarFaixa(medio: passoFaixa) }
-            }
-            linhaAjuste("  Alto") {
-                botaoPasso("minus", rotulo: "Diminuir faixa alta") { mudarFaixa(alto: -passoFaixa) }
-                botaoPasso("plus", rotulo: "Aumentar faixa alta") { mudarFaixa(alto: passoFaixa) }
+            if modulo != .calendario {
+                linhaAjuste("Faixas") {
+                    valorPilula("\(numeroCurto(faixa.medio)) · \(numeroCurto(faixa.alto)) \(unidadeFaixa)", dica: "") {}
+                }
+                linhaAjuste("  Médio") {
+                    botaoPasso("minus", rotulo: "Diminuir faixa média") { mudarFaixa(medio: -passoFaixa) }
+                    botaoPasso("plus", rotulo: "Aumentar faixa média") { mudarFaixa(medio: passoFaixa) }
+                }
+                linhaAjuste("  Alto") {
+                    botaoPasso("minus", rotulo: "Diminuir faixa alta") { mudarFaixa(alto: -passoFaixa) }
+                    botaoPasso("plus", rotulo: "Aumentar faixa alta") { mudarFaixa(alto: passoFaixa) }
+                }
             }
             linhaAjuste("Altura") {
                 let y = item.deslocamentoY ?? 0
@@ -785,7 +787,7 @@ struct PaginaModuloPrefs: View {
     // Cor
 
     private func blocoCor(_ item: ItemPecaModulo) -> some View {
-        let seguirFaixa = item.peca.segueFaixa
+        let seguirFaixa = item.peca.segueFaixa && modulo != .calendario
         let porFaixa = seguirFaixa && (item.porFaixa ?? config.corPorFaixa)
         let hex = item.corHex?.uppercased()
         let automatica = hex == nil && !porFaixa

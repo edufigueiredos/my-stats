@@ -290,6 +290,8 @@ final class ControladorBarra: NSObject {
         if popover.isShown {
             popover.performClose(nil)
         } else {
+            TelaDoClique.compartilhada.usar(botao)
+            popover.contentViewController?.view.layoutSubtreeIfNeeded()
             popover.show(relativeTo: botao.bounds, of: botao, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
         }

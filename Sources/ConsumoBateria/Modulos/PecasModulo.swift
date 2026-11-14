@@ -13,6 +13,7 @@ enum PecaModulo: String, CaseIterable, Codable, Sendable, Identifiable {
     case baixando, enviando, latencia
     case tempGPU, ventoinha, memoriaGPU
     case ventoinhaPct
+    case data, proximoCompromisso
 
     var id: String { rawValue }
 
@@ -26,6 +27,7 @@ enum PecaModulo: String, CaseIterable, Codable, Sendable, Identifiable {
             case .disco: return "Ocupado %"
             case .rede: return "Latência"
             case .sensores: return "Temperatura"
+            case .calendario: return "Data"
             }
         case .grafico: return "Gráfico"
         case .icone: return "Ícone"
@@ -53,6 +55,8 @@ enum PecaModulo: String, CaseIterable, Codable, Sendable, Identifiable {
         case .ventoinha: return "Ventoinha rpm"
         case .ventoinhaPct: return "Ventoinha %"
         case .memoriaGPU: return "Memória da GPU"
+        case .data: return "Data"
+        case .proximoCompromisso: return "Próximo compromisso"
         }
     }
 
@@ -68,6 +72,7 @@ enum PecaModulo: String, CaseIterable, Codable, Sendable, Identifiable {
         case .rede: return [.rotulo, .ponto, .latencia, .baixando, .enviando, .grafico, .icone, .texto, .separador, .horario]
         case .sensores: return [.rotulo, .temperatura, .tempGPU, .potencia, .ventoinha, .ventoinhaPct, .grafico, .icone, .anel, .texto,
                                 .separador, .horario]
+        case .calendario: return [.rotulo, .data, .horario, .proximoCompromisso, .icone, .texto, .separador]
         }
     }
 
@@ -155,7 +160,7 @@ struct FaixaModulo: Codable, Sendable, Equatable {
         case .memoria: return FaixaModulo(medio: 70, alto: 90)
         case .disco: return FaixaModulo(medio: 80, alto: 95)
         case .rede: return FaixaModulo(medio: 60, alto: 150)
-        case .sensores: return FaixaModulo(medio: 70, alto: 90)
+        case .sensores, .calendario: return FaixaModulo(medio: 70, alto: 90)
         }
     }
 
@@ -294,7 +299,7 @@ struct ConfigModulo: Codable, Sendable, Equatable {
 // MARK: - Formatos prontos
 
 enum FormatoModulo: String, CaseIterable, Codable, Sendable {
-    case rotuloValor, graficoValor, iconeValor, anelValor, compacto, pontoValor, duasLinhas
+    case rotuloValor, graficoValor, iconeValor, anelValor, compacto, pontoValor, duasLinhas, dataHora, proximoCompromisso
 
     var titulo: String {
         switch self {
@@ -305,10 +310,13 @@ enum FormatoModulo: String, CaseIterable, Codable, Sendable {
         case .compacto: return "Compacto"
         case .pontoValor: return "Ponto e latência"
         case .duasLinhas: return "Duas linhas"
+        case .dataHora: return "Data e hora"
+        case .proximoCompromisso: return "Próximo compromisso"
         }
     }
 
     static func disponiveis(_ m: Modulo) -> [FormatoModulo] {
+        if m == .calendario { return [.dataHora, .iconeValor, .rotuloValor, .compacto, .proximoCompromisso] }
         var l: [FormatoModulo] = [.rotuloValor, .graficoValor, .iconeValor, .anelValor, .compacto]
         if m == .rede { l.append(.pontoValor) }
         if m == .sensores { l.append(.duasLinhas) }
@@ -319,6 +327,7 @@ enum FormatoModulo: String, CaseIterable, Codable, Sendable {
         switch m {
         case .rede: return .pontoValor
         case .sensores: return .duasLinhas
+        case .calendario: return .dataHora
         default: return .rotuloValor
         }
     }
@@ -330,7 +339,17 @@ enum FormatoModulo: String, CaseIterable, Codable, Sendable {
             ConfigModulo(pecas: cima, pecasBaixo: baixo, faixa: faixa)
         }
         let sensoresDuas = c(i(.temperatura, .separador, .tempGPU), i(.potencia))
+        if m == .calendario {
+            switch self {
+            case .dataHora: return c(i(.data, .separador, .horario))
+            case .proximoCompromisso: return c(i(.data), i(.proximoCompromisso))
+            case .compacto: return c(i(.horario))
+            case .iconeValor: return c(i(.icone, .valor))
+            default: return c(i(.rotulo), i(.valor))
+            }
+        }
         switch self {
+        case .dataHora, .proximoCompromisso: return c(i(.rotulo), i(.valor))
         case .rotuloValor: return c(i(.rotulo), i(.valor))
         case .graficoValor: return c(i(.grafico, .valor))
         case .iconeValor: return c(i(.icone, .valor))
@@ -410,6 +429,8 @@ struct AvisoModulo: Codable, Sendable, Equatable, Identifiable {
                     AvisoModulo(tipo: .semRede, ligado: false, limite: 0, minutos: 1)]
         case .sensores:
             return [AvisoModulo(tipo: .temperaturaAcima, ligado: false, limite: 95, minutos: 2)]
+        case .calendario:
+            return []
         }
     }
 }
@@ -512,6 +533,7 @@ enum TextoPecaModulo {
             guard let r = l.rede, r.conectado else { return nil }
             return r.latenciaMs
         case .sensores: return l.sensores?.cpuC
+        case .calendario: return nil
         }
     }
 
@@ -551,6 +573,7 @@ enum TextoPecaModulo {
         case .cpu, .gpu, .memoria, .disco: return percentual(medida(m, l), casas ?? 0)
         case .rede: return latencia(l)
         case .sensores: return graus(l.sensores?.cpuC, casas ?? 0)
+        case .calendario: return FormatoData.dataBarra(l.data)
         }
     }
 
@@ -584,6 +607,7 @@ enum TextoPecaModulo {
                 .replacingOccurrences(of: "{rotulo}", with: m.rotuloCurto)
                 .replacingOccurrences(of: "{temp}", with: temp)
                 .replacingOccurrences(of: "{hora}", with: Formato.horario(l.data))
+                .replacingOccurrences(of: "{data}", with: FormatoData.dataBarra(l.data))
         case .apps: base = percentual(l.cpu?.usuario, casas ?? 0)
         case .sistema: base = percentual(l.cpu?.sistema, casas ?? 0)
         case .temperatura: base = graus(m == .gpu ? l.sensores?.gpuC : l.sensores?.cpuC, casas ?? 0)
@@ -617,6 +641,8 @@ enum TextoPecaModulo {
         case .ventoinhaPct:
             let f = l.sensores?.ventoinhas.compactMap(\.fracao) ?? []
             base = percentual(f.isEmpty ? nil : f.reduce(0, +) / Double(f.count) * 100, casas ?? 0)
+        case .data: base = FormatoData.dataBarra(l.data)
+        case .proximoCompromisso: base = FormatoData.proximoCompromisso(l)
         case .memoriaGPU:
             if let b = l.gpu?.memoriaEmUsoBytes { base = Formato.bytesMemoria(b) } else { base = Formato.semDado }
         }

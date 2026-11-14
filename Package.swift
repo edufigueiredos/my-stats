@@ -17,6 +17,9 @@ let package = Package(
                 .linkedFramework("ServiceManagement"),
                 .linkedFramework("CoreWLAN"),
                 .linkedFramework("SystemConfiguration"),
+                // Sparkle.framework: em Contents/Frameworks no app montado, ao lado do binário no swift build (--foto, --sensores).
+                .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks",
+                              "-Xlinker", "-rpath", "-Xlinker", "@executable_path"]),
             ]
         )
     ]

@@ -56,7 +56,7 @@ final class AjustesModulos {
 
     nonisolated static let chave = "modulosSistema"
     /// Ordem da barra, da esquerda para a direita (a do desenho Main.dc.html).
-    nonisolated static let ordemPadrao: [Modulo] = [.cpu, .gpu, .disco, .memoria, .rede, .sensores]
+    nonisolated static let ordemPadrao: [Modulo] = [.cpu, .gpu, .disco, .memoria, .rede, .sensores, .calendario]
 
     @ObservationIgnored private let persistir: Bool
     @ObservationIgnored private let defaults = UserDefaults.standard
@@ -218,12 +218,20 @@ final class AjustesModulos {
         raiz["modulos"] = lista
         guard let completo = try? JSONSerialization.data(withJSONObject: raiz) else { return false }
 
+        // Config gravada antes do Calendário existir: os seis módulos antigos; o novo entra por último e desligado.
+        var antigaRaiz = raiz
+        antigaRaiz["modulos"] = lista.filter { ($0["modulo"] as? String) != Modulo.calendario.rawValue }
+        guard let antigaDados = try? JSONSerialization.data(withJSONObject: antigaRaiz) else { return false }
+        let d = decodificar(antigaDados)
+        guard d.modulos.count == ordemPadrao.count, d.modulos.last?.modulo == .calendario, d.modulos.last?.ligado == false,
+              d.modulos.first(where: { $0.modulo == .cpu })?.ligado == true else { return false }
+
         let a = decodificar(vazio)
         let b = decodificar(parcial)
         let c = decodificar(completo)
-        guard a.modulos.count == 6, !a.modulos.contains(where: \.ligado) else { return false }
-        guard b.modulos.count == 6, b.modulos.first(where: { $0.modulo == .cpu })?.ligado == true else { return false }
-        guard c.modulos.count == 6, c.modulos.first(where: { $0.modulo == .cpu })?.ligado == true,
+        guard a.modulos.count == ordemPadrao.count, !a.modulos.contains(where: \.ligado) else { return false }
+        guard b.modulos.count == ordemPadrao.count, b.modulos.first(where: { $0.modulo == .cpu })?.ligado == true else { return false }
+        guard c.modulos.count == ordemPadrao.count, c.modulos.first(where: { $0.modulo == .cpu })?.ligado == true,
               c.modulos.first(where: { $0.modulo == .cpu })?.config.pecas.count == antes else { return false }
         return true
     }

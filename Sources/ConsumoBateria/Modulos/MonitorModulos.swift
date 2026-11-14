@@ -39,6 +39,14 @@ final class MonitorModulos {
     @ObservationIgnored private lazy var leitorSensores = LeitorSensores()
     @ObservationIgnored private lazy var leitorEnergia = LeitorEnergiaSoC()
     @ObservationIgnored private lazy var leitorProcessos = LeitorProcessos()
+    @ObservationIgnored private lazy var leitorCalendario: LeitorCalendario = {
+        let l = LeitorCalendario()
+        l.aoMudar = { [weak self] in
+            guard let self, self.modulosAtivos.contains(.calendario) else { return }
+            self.leituras.calendario = self.leitorCalendario.leitura
+        }
+        return l
+    }()
 
     init(ajustes: AjustesModulos = .compartilhado, vivo: Bool = true,
          energiaBateria: @escaping @MainActor () -> (entradaW: Double?, carregadorW: Double?)) {
@@ -63,19 +71,38 @@ final class MonitorModulos {
     // MARK: Timer
 
     private var modulosAtivos: Set<Modulo> {
-        if geralAberto { return Set(Modulo.allCases) }
-        return Set(ajustes.ligados).union(paineisAbertos)
+        // A Visão geral não mostra o Calendário: ele só é lido com o módulo ligado ou o painel dele aberto.
+        let proprios = Set(ajustes.ligados).union(paineisAbertos)
+        if geralAberto { return Set(Modulo.allCases.filter { $0 != .calendario }).union(proprios) }
+        return proprios
     }
+
+    /// Calendário ligado ou com painel aberto (sem painel aberto, o módulo ligado só lê o que já foi autorizado).
+    private var calendarioAtivo: Bool { modulosAtivos.contains(.calendario) }
+
+    private func sincronizarCalendario() {
+        leitorCalendario.definirAtivo(calendarioAtivo)
+        // O pedido de permissão só sai com o módulo ligado e o painel dele aberto.
+        if ajustes.ligados.contains(.calendario), paineisAbertos.contains(.calendario) { leitorCalendario.pedirPermissao() }
+        if !paineisAbertos.contains(.calendario) { leitorCalendario.definirMes(Date()) }
+    }
+
+    /// Botão "Permitir acesso ao Calendário" do painel.
+    func pedirPermissaoCalendario() { leitorCalendario.pedirPermissao() }
+
+    /// Mês mostrado no painel do Calendário (a janela de busca começa no primeiro dia dele).
+    func mostrarMesCalendario(_ data: Date) { leitorCalendario.definirMes(data) }
 
     /// Cria, recria (o intervalo mudou) ou para o timer conforme haja o que ler.
     func reavaliar() {
         guard vivo else { return }
+        sincronizarCalendario()
         guard !modulosAtivos.isEmpty else {
             timer?.invalidate()
             timer = nil
             intervaloDoTimer = 0
             if leituras.cpu != nil || leituras.gpu != nil || leituras.memoria != nil || leituras.disco != nil
-                || leituras.rede != nil || leituras.sensores != nil || leituras.energia != nil {
+                || leituras.rede != nil || leituras.sensores != nil || leituras.energia != nil || leituras.calendario != nil {
                 leituras = LeiturasModulos(data: Date(), ligadoDesde: ligadoDesde)
             }
             return
@@ -114,6 +141,10 @@ final class MonitorModulos {
         if ativos.contains(.gpu) { l.gpu = leitorGPU.ler() }
         if ativos.contains(.memoria) { l.memoria = leitorMemoria.ler() }
         if ativos.contains(.disco) { l.disco = leitorDisco.ler() }
+        if ativos.contains(.calendario) {
+            sincronizarCalendario()
+            l.calendario = leitorCalendario.leitura
+        }
         if ativos.contains(.rede) {
             l.rede = leitorRede.ler()
             leitorRede.pingarSePreciso()
