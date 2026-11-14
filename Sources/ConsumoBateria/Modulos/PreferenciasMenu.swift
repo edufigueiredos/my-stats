@@ -52,8 +52,8 @@ struct PreferenciasComMenu: View {
     private var menu: some View {
         VStack(alignment: .leading, spacing: 2) {
             itemMenu("Geral", .geral)
-            itemMenu("Bateria", .bateria)
             titulo("MÓDULOS")
+            itemMenu("Bateria", .bateria)
             ForEach(Modulo.allCases) { m in itemMenu(m.titulo, .modulo(m)) }
             titulo("APARÊNCIA")
             itemMenu("Temas", .temas)

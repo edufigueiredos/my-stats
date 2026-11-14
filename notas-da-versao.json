@@ -10,5 +10,8 @@
     "CPU: o anel não mostra mais 0,0 W nos Macs que não informam a potência da CPU.",
     "Painéis: a altura passa a respeitar a tela onde o ícone foi clicado, para não abrir cortado com duas telas.",
     "Painel da GPU: uso, frequência e temperatura corrigidos; ventoinhas também em %."
+  ],
+  "0.2.2": [
+    "Preferências: a Bateria passa a ficar junto dos outros módulos no menu lateral."
   ]
 }

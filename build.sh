@@ -7,6 +7,11 @@ set -euo pipefail
 cd "$(dirname "$0")"
 NOME=ConsumoBateria          # executável e alvo do SwiftPM (interno)
 APP_NOME="My Stats"          # nome do app no Finder e no Mac
+# Instalar no próprio Mac assina com o Developer ID, se existir: a permissão do Calendário (TCC) fica presa à assinatura,
+# e um build ad hoc muda a cada compilação e faz o macOS pedir de novo.
+if [[ -z "${ASSINAR:-}" && "${1:-}" == "instalar" ]]; then
+  ASSINAR="$(security find-identity -v -p codesigning 2>/dev/null | sed -n 's/.*"\(Developer ID Application:[^"]*\)".*/\1/p' | head -1)"
+fi
 ASSINAR="${ASSINAR:--}"
 swift build -c release
 APP="build/$APP_NOME.app"
