@@ -1,4 +1,4 @@
-# Consumo de Bateria (nome provisório)
+# My Stats
 
 App de barra de menus do macOS que mostra quanto da bateria o Mac gasta por hora, por exemplo `−11,3 %/h`, ou `+38,0 %/h` carregando. Não aparece no Dock. Interface em pt-BR, fiel ao desenho aprovado em `docs/desenho/*.dc.html`.
 
@@ -51,13 +51,14 @@ CPU, GPU, Memória, Disco, Rede e Sensores, cada um com item na barra e painel p
 
 ## Compilar e instalar
 ```bash
-./build.sh            # gera build/ConsumoBateria.app (assinatura ad hoc)
+./build.sh            # gera "build/My Stats.app" (assinatura ad hoc)
 ./build.sh instalar   # também copia para ~/Applications e abre
+swift scripts/gerar-icone.swift   # refaz Recursos/AppIcon.icns a partir de docs/logo/my-stats-icone-escuro.svg
 ```
 "Abrir ao iniciar o Mac" usa `SMAppService.mainApp`. Funciona melhor com o app em `~/Applications`.
 
 ## Conferir o visual (`--foto`)
-`build/ConsumoBateria.app/Contents/MacOS/ConsumoBateria --foto /caminho/da/pasta` grava PNGs com dados simulados (não toca na bateria nem grava nada do app):
+`"build/My Stats.app/Contents/MacOS/ConsumoBateria" --foto /caminho/da/pasta` grava PNGs com dados simulados (não toca na bateria nem grava nada do app):
 - `barra-<formato>-<estado>.png`: 6 formatos × 5 estados (30 arquivos), e `barra-todos.png` com a grade;
 - `painel-descarregando.png` e `painel-carregando.png` (tema Gold);
 - `detalhes.png` e `preferencias.png` (tema Gold; Descarregando com o exemplo de duas linhas à esquerda, Consumo alto no formato Duas linhas);

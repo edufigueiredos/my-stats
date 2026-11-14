@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>My Stats</title>
+  <defs>
+    <linearGradient id="fundo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2E2419"/>
+      <stop offset="1" stop-color="#100C08"/>
+    </linearGradient>
+    <linearGradient id="ouro" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F2CC7A"/>
+      <stop offset="1" stop-color="#BD8A33"/>
+    </linearGradient>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#fundo)"/>
+  <rect x="100.5" y="100.5" width="823" height="823" rx="186" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="3"/>
+  <rect x="192" y="232" width="96" height="520" rx="48" fill="url(#ouro)"/>
+  <rect x="328" y="492" width="96" height="260" rx="48" fill="url(#ouro)"/>
+  <rect x="464" y="372" width="96" height="380" rx="48" fill="#F7E3B5"/>
+  <rect x="600" y="492" width="96" height="260" rx="48" fill="url(#ouro)"/>
+  <rect x="736" y="232" width="96" height="520" rx="48" fill="url(#ouro)"/>
+</svg>

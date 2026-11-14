@@ -4,6 +4,23 @@ import Observation
 
 @main
 enum Entrada {
+    /// Trava de arquivo mantida aberta enquanto o app roda: uma segunda cópia (instalador e item de login abrindo
+    /// juntos, por exemplo) não consegue a trava e sai, sem duplicar os ícones. Builds de desenvolvimento ficam de fora.
+    nonisolated(unsafe) private static var trava: Int32 = -1
+
+    private static func unicaCopia() -> Bool {
+        if Bundle.main.executablePath?.contains("/.build/") == true { return true }
+        let caminho = NSTemporaryDirectory() + "ConsumoBateria.trava"
+        let fd = open(caminho, O_CREAT | O_RDWR, 0o600)
+        guard fd >= 0 else { return true }
+        if flock(fd, LOCK_EX | LOCK_NB) != 0 {
+            close(fd)
+            return false
+        }
+        trava = fd
+        return true
+    }
+
     @MainActor
     static func main() {
         let args = CommandLine.arguments
@@ -36,6 +53,7 @@ enum Entrada {
             print(String(format: "1ª leitura %.0f ms, 2ª %.0f ms", tempos[0], tempos[1]))
             return
         }
+        guard Entrada.unicaCopia() else { return }
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
         let delegado = AppDelegate(ligarTodosOsModulos: args.contains("--ligar-modulos"))
