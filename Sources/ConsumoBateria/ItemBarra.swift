@@ -185,6 +185,8 @@ enum RenderizadorBarra {
 final class ControladorBarra: NSObject {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let popover = NSPopover()
+    /// Atualização pelo GitHub; nil no build de desenvolvimento.
+    var atualizador: Atualizador?
     private let pegarSituacao: () -> Situacao?
     private let abrirDetalhes: () -> Void
     private let abrirPreferencias: () -> Void
@@ -341,6 +343,12 @@ final class ControladorBarra: NSObject {
         let preferencias = NSMenuItem(title: "Preferências…", action: #selector(chamarPreferencias), keyEquivalent: ",")
         preferencias.target = self
         menu.addItem(preferencias)
+        if let a = atualizador, a.ligado {
+            let titulo = a.pendente.map { "Atualizar para a versão \($0)…" } ?? "Procurar atualizações…"
+            let item = NSMenuItem(title: titulo, action: #selector(chamarAtualizacao), keyEquivalent: "")
+            item.target = self
+            menu.addItem(item)
+        }
         menu.addItem(.separator())
         let sair = NSMenuItem(title: "Sair", action: #selector(sair), keyEquivalent: "q")
         sair.target = self
@@ -351,6 +359,8 @@ final class ControladorBarra: NSObject {
         statusItem.button?.performClick(nil)
         statusItem.menu = nil
     }
+
+    @objc private func chamarAtualizacao() { atualizador?.buscarAgora() }
 
     @objc private func escolherFormato(_ item: NSMenuItem) {
         guard let bruto = item.representedObject as? String, let formato = FormatoBarra(rawValue: bruto) else { return }

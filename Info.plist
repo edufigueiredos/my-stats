@@ -2,16 +2,39 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleExecutable</key><string>ConsumoBateria</string>
-    <key>CFBundleIdentifier</key><string>com.edufigueiredo.consumobateria</string>
-    <key>CFBundleName</key><string>My Stats</string>
-    <key>CFBundleDisplayName</key><string>My Stats</string>
-    <key>CFBundleIconFile</key><string>AppIcon</string>
-    <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>0.1</string>
-    <key>CFBundleVersion</key><string>1</string>
-    <key>LSMinimumSystemVersion</key><string>14.0</string>
-    <key>LSUIElement</key><true/>
-    <key>NSHumanReadableCopyright</key><string>Licença Apache 2.0</string>
+	<key>CFBundleDisplayName</key>
+	<string>My Stats</string>
+	<key>CFBundleExecutable</key>
+	<string>ConsumoBateria</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.edufigueiredo.consumobateria</string>
+	<key>CFBundleName</key>
+	<string>My Stats</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>Licença Apache 2.0</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/edufigueiredos/my-stats/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>0pr2SugwIgflPV38BPMvi1Fw1yGTjIdJJjr+543JwKM=</string>
+	<key>SURequireSignedFeed</key>
+	<true/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
 </dict>
 </plist>

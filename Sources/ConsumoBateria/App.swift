@@ -123,6 +123,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var barraModulos: ControladorModulos?
     private let ajustesModulos: AjustesModulos
     private let navegacaoPreferencias = NavegacaoPreferencias()
+    private var atualizador: Atualizador?
 
     /// `ligarTodosOsModulos` (--ligar-modulos): para conferir a barra sem mexer no UserDefaults do dono.
     init(ligarTodosOsModulos: Bool = false) {
@@ -153,6 +154,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             pegarSituacao: { monitor.situacao },
             abrirPreferenciasModulos: { [weak self] in self?.abrirPreferencias(pagina: .modulo(.cpu)) },
             ajustesModulos: ajustesModulos)
+        let atualizador = Atualizador()
+        self.atualizador = atualizador
+        barra?.atualizador = atualizador
         observar()
 
         // Os módulos nascem depois da bateria, para o item dela ficar na ponta direita.

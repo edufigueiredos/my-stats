@@ -1,0 +1,8 @@
+{
+  "0.2.0": [
+    "Primeira versão pública do My Stats.",
+    "Bateria em %/h na barra, com editor de peças, painel, histórico de 90 dias e 6 temas.",
+    "Módulos do sistema: CPU, GPU, memória, disco, rede e sensores, cada um com item na barra e painel próprio.",
+    "Atualização automática: o app procura versão nova uma vez por dia nas releases do GitHub."
+  ]
+}

@@ -1,6 +1,11 @@
 # My Stats
 
+
 App de barra de menus do macOS que mostra quanto da bateria o Mac gasta por hora, por exemplo `−11,3 %/h`, ou `+38,0 %/h` carregando. Não aparece no Dock. Interface em pt-BR, fiel ao desenho aprovado em `docs/desenho/*.dc.html`.
+
+## Baixar
+
+Pegue o `My-Stats-<versão>.dmg` da [última release](https://github.com/edufigueiredos/my-stats/releases/latest), abra e arraste o My Stats para Aplicativos. O app é assinado e notarizado pela Apple e se atualiza sozinho pelas releases deste repositório (detalhes em [docs/atualizacao.md](docs/atualizacao.md)). Requer macOS 14 ou mais novo.
 
 ## O que o app mostra
 - **Item da barra de menus**: 6 formatos (Empilhado = padrão, Ícone, Valor, Ícone + valor, Duas linhas, Velocímetro) e 5 estados (cheia, carregando, descarregando, na tomada parado, consumo alto). Acima do limite configurado (padrão 20 %/h) o item fica laranja. Clique direito troca o formato, abre Mais informações, Preferências ou sai. O item é um `NSStatusItem` com a composição renderizada em imagem (template quando não há cor).
