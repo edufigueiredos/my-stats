@@ -70,3 +70,7 @@ swift scripts/gerar-icone.swift   # refaz Recursos/AppIcon.icns a partir de docs
 - checagem de compatibilidade: o `--foto` decodifica três JSONs embutidos (antigo com nomes de peça, intermediário com `pecasBaixo` e `ItemPeca`, e atual completo) e imprime `configs antigas: ok` ou o erro;
 - `barra-custom-<estado>.png`: cima só o Tempo, baixo o Ritmo sobre a bateria, alinhado à esquerda;
 - `tema-gold|black|white|neon|vidro|classico.png`: o painel em cada tema (o Liquid Glass usa um fundo chapado que imita o vidro).
+
+## Licença
+
+Apache 2.0. Veja o arquivo [LICENSE](LICENSE).
