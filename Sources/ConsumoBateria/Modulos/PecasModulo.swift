@@ -12,6 +12,7 @@ enum PecaModulo: String, CaseIterable, Codable, Sendable, Identifiable {
     case livre, leitura, escrita
     case baixando, enviando, latencia
     case tempGPU, ventoinha, memoriaGPU
+    case ventoinhaPct
 
     var id: String { rawValue }
 
@@ -49,7 +50,8 @@ enum PecaModulo: String, CaseIterable, Codable, Sendable, Identifiable {
         case .enviando: return "Enviando"
         case .latencia: return "Latência"
         case .tempGPU: return "Temp. GPU"
-        case .ventoinha: return "Ventoinha"
+        case .ventoinha: return "Ventoinha rpm"
+        case .ventoinhaPct: return "Ventoinha %"
         case .memoriaGPU: return "Memória da GPU"
         }
     }
@@ -64,7 +66,7 @@ enum PecaModulo: String, CaseIterable, Codable, Sendable, Identifiable {
         case .memoria: return [.rotulo, .valor, .usada, .pressao, .swap, .grafico, .icone, .anel, .texto, .separador, .horario]
         case .disco: return [.rotulo, .valor, .livre, .leitura, .escrita, .grafico, .icone, .anel, .texto, .separador, .horario]
         case .rede: return [.rotulo, .ponto, .latencia, .baixando, .enviando, .grafico, .icone, .texto, .separador, .horario]
-        case .sensores: return [.rotulo, .temperatura, .tempGPU, .potencia, .ventoinha, .grafico, .icone, .anel, .texto,
+        case .sensores: return [.rotulo, .temperatura, .tempGPU, .potencia, .ventoinha, .ventoinhaPct, .grafico, .icone, .anel, .texto,
                                 .separador, .horario]
         }
     }
@@ -609,7 +611,12 @@ enum TextoPecaModulo {
         case .enviando: base = velocidade("↑", l.rede?.enviandoBps)
         case .latencia: base = latencia(l)
         case .ventoinha:
-            if let v = l.sensores?.ventoinhas.first { base = Formato.rpm(v.rpm) } else { base = Formato.semDado }
+            // Média das ventoinhas (no MacBook Pro são duas e giram quase juntas).
+            let rpms = l.sensores?.ventoinhas.map(\.rpm) ?? []
+            base = rpms.isEmpty ? Formato.semDado : Formato.rpm(rpms.reduce(0, +) / Double(rpms.count))
+        case .ventoinhaPct:
+            let f = l.sensores?.ventoinhas.compactMap(\.fracao) ?? []
+            base = percentual(f.isEmpty ? nil : f.reduce(0, +) / Double(f.count) * 100, casas ?? 0)
         case .memoriaGPU:
             if let b = l.gpu?.memoriaEmUsoBytes { base = Formato.bytesMemoria(b) } else { base = Formato.semDado }
         }

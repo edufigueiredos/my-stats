@@ -643,7 +643,7 @@ struct PaginaModuloPrefs: View {
 
     private func negritoAuto(_ linha: LinhaPeca) -> Bool { !(config.duasLinhas && linha == .cima) }
 
-    private static let pecasNumericas: Set<PecaModulo> = [.valor, .apps, .sistema, .temperatura, .tempGPU, .potencia, .cargaMedia, .texto]
+    private static let pecasNumericas: Set<PecaModulo> = [.valor, .apps, .sistema, .temperatura, .tempGPU, .potencia, .cargaMedia, .ventoinhaPct, .texto]
     private static let pecasComTexto: Set<PecaModulo> = [.texto, .rotulo, .separador]
 
     private var unidadeFaixa: String {

@@ -120,17 +120,40 @@ private struct FormaIcone: Shape {
 
 // MARK: - Moldura e cabeçalho
 
+private struct AlturaTotalModulo: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
 private struct AlturaConteudoModulo: PreferenceKey {
     static let defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }
 
 /// Casca de todo painel de módulo: 400 de largura, conteúdo que rola até o limite da tela e rodapé fixo.
+/// Últimas alturas medidas de cada painel. O popover dos módulos é um só: sem isto, ao trocar de painel ele abre
+/// com o tamanho do anterior (cortado) e só depois cresce.
+@MainActor
+final class MemoriaAlturasPainel {
+    var conteudo: [String: CGFloat] = [:]
+    var total: [String: CGFloat] = [:]
+}
+
+struct ChaveAlturaPainel {
+    let memoria: MemoriaAlturasPainel
+    let chave: String
+}
+
+extension EnvironmentValues {
+    @Entry var alturaPainel: ChaveAlturaPainel? = nil
+}
+
 struct MolduraPainelModulo<Conteudo: View, Rodape: View>: View {
     let alturaMaxima: CGFloat?
     let conteudo: Conteudo
     let rodape: Rodape
     @State private var alturaConteudo: CGFloat = 0
+    @Environment(\.alturaPainel) private var lembranca
 
     init(alturaMaxima: CGFloat?, @ViewBuilder conteudo: () -> Conteudo, @ViewBuilder rodape: () -> Rodape) {
         self.alturaMaxima = alturaMaxima
@@ -149,8 +172,11 @@ struct MolduraPainelModulo<Conteudo: View, Rodape: View>: View {
                             Color.clear.preference(key: AlturaConteudoModulo.self, value: g.size.height)
                         })
                 }
-                .onPreferenceChange(AlturaConteudoModulo.self) { alturaConteudo = $0 }
-                .frame(height: min(alturaConteudo > 0 ? alturaConteudo : teto, teto))
+                .onPreferenceChange(AlturaConteudoModulo.self) { h in
+                    alturaConteudo = h
+                    if h > 0, let l = lembranca { l.memoria.conteudo[l.chave] = h }
+                }
+                .frame(height: min(alturaConteudo > 0 ? alturaConteudo : (guardada ?? teto), teto))
             } else {
                 VStack(spacing: 14) { conteudo }
             }
@@ -158,7 +184,13 @@ struct MolduraPainelModulo<Conteudo: View, Rodape: View>: View {
         }
         .padding(EdgeInsets(top: 18, leading: 16, bottom: 14, trailing: 16))
         .frame(width: 400)
+        .background(GeometryReader { g in Color.clear.preference(key: AlturaTotalModulo.self, value: g.size.height) })
+        .onPreferenceChange(AlturaTotalModulo.self) { h in
+            if h > 0, let l = lembranca { l.memoria.total[l.chave] = h }
+        }
     }
+
+    private var guardada: CGFloat? { lembranca.flatMap { $0.memoria.conteudo[$0.chave] } }
 }
 
 struct CabecalhoModulo: View {
@@ -515,7 +547,8 @@ struct BlocosModulo: View {
     init(_ blocos: [(rotulo: String, valor: String, sub: String)]) { self.blocos = blocos }
 
     var body: some View {
-        HStack(spacing: 8) {
+        // Ladrilhos da mesma altura; o texto de apoio quebra em até duas linhas em vez de cortar.
+        HStack(alignment: .top, spacing: 8) {
             ForEach(blocos.indices, id: \.self) { i in
                 VStack(alignment: .leading, spacing: 3) {
                     Text(blocos[i].rotulo).font(.system(size: 12)).foregroundStyle(Color.primary.opacity(0.62)).lineLimit(1)
@@ -524,14 +557,16 @@ struct BlocosModulo: View {
                         .monospacedDigit()
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
-                    Text(blocos[i].sub).font(.system(size: 12)).foregroundStyle(Color.primary.opacity(0.55)).lineLimit(1)
+                    Text(blocos[i].sub).font(.system(size: 12)).foregroundStyle(Color.primary.opacity(0.55))
+                        .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(estilo.ladrilho))
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(estilo.bordaCartao, lineWidth: 1))
             }
         }
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 

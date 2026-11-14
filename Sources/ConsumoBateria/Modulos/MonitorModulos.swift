@@ -126,8 +126,10 @@ final class MonitorModulos {
         if precisaSensores {
             let bat = energiaBateria()
             l.sensores = leitorSensores.ler(entradaSistemaW: bat.entradaW, carregadorW: bat.carregadorW)
-            l.energia = leitorEnergia.ler()
         }
+        // IOReport também dá o uso da GPU: o "Device Utilization %" do registro é instantâneo e quase sempre 0.
+        if precisaSensores || ativos.contains(.gpu) { l.energia = leitorEnergia.ler() }
+        if let a = l.energia?.gpuAtivo, l.gpu != nil { l.gpu?.uso = a }
 
         // "Quem mais usa": só enquanto o painel está aberto.
         let abertoCPU = geralAberto || paineisAbertos.contains(.cpu)

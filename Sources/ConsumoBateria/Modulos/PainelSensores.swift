@@ -92,7 +92,7 @@ struct PainelSensores: View {
         let itens: [(nome: String, w: Double?, cor: Color)] = [
             ("CPU", cpu, corCPU), ("GPU", gpu, corGPU), ("Tela", tela, corTela), ("Resto do Mac", resto, corResto),
         ]
-        func texto(_ w: Double?) -> String { w.map { Formato.numero($0, casas: 0) + " W" } ?? Formato.semDado }
+        func texto(_ w: Double?) -> String { w.map { Formato.numero($0, casas: $0 < 10 ? 1 : 0) + " W" } ?? Formato.semDado }
         let partes: [(fracao: Double, cor: Color)] = itens.compactMap { item in
             guard let w = item.w, let s = sistema, s > 0 else { return nil }
             return (w / s, item.cor)
@@ -211,6 +211,10 @@ struct PainelSensores: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(v.nome).font(.system(size: 12)).foregroundStyle(Color.primary.opacity(0.62)).lineLimit(1)
                     Text(Formato.rpm(v.rpm)).font(.system(size: 17, weight: .bold)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.8)
+                    if let f = v.fracao {
+                        Text("\(Formato.percentual(f * 100)) da rotação máxima")
+                            .font(.system(size: 11)).monospacedDigit().foregroundStyle(Color.primary.opacity(0.55)).lineLimit(1).minimumScaleFactor(0.8)
+                    }
                 }
                 Spacer(minLength: 0)
             }

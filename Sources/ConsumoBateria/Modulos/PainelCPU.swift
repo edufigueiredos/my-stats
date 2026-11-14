@@ -191,7 +191,7 @@ struct PainelCPU: View {
     private var cartaoUso: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Uso · média de 5 s")
+                Text("Uso agora")
                     .font(.system(size: 11, weight: .semibold))
                     .tracking(0.9)
                     .textCase(.uppercase)
@@ -206,7 +206,7 @@ struct PainelCPU: View {
 
             AnelCentroPainel(fracao: (cpu?.uso ?? 0) / 100,
                              centro: Formato.temperatura(leituras.sensores?.cpuC, curta: true),
-                             sub: leituras.energia?.cpuW.map { Formato.numero($0, casas: 0) + " W" } ?? Formato.semDado)
+                             sub: leituras.energia?.cpuW.map { Formato.numero($0, casas: $0 < 10 ? 1 : 0) + " W" } ?? Formato.semDado)
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(estilo.cartao))
@@ -336,7 +336,7 @@ struct PainelCPU: View {
             temp += " · máx. " + Formato.temperatura(maximo, curta: false)
         }
         r.append(("Temperatura", temp))
-        r.append(("Potência da CPU", leituras.energia?.cpuW.map { Formato.numero($0, casas: 0) + " W" } ?? Formato.semDado))
+        r.append(("Potência da CPU", leituras.energia?.cpuW.map { Formato.numero($0, casas: $0 < 10 ? 1 : 0) + " W" } ?? Formato.semDado))
         if let n = cpu?.processos {
             var t = Formato.inteiro(n)
             if let th = cpu?.threads { t += " · \(Formato.inteiro(th)) threads" }

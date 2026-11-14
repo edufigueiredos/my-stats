@@ -72,7 +72,7 @@ struct PainelGeral: View {
         let cpu = leituras.cpu, gpu = leituras.gpu, mem = leituras.memoria, disco = leituras.disco, rede = leituras.rede
         let sens = leituras.sensores
 
-        let gpuSub = [leituras.energia?.gpuW.map { Formato.numero($0, casas: 0) + " W" }, sens?.gpuC.map { Formato.temperatura($0, curta: false) }]
+        let gpuSub = [leituras.energia?.gpuW.map { Formato.numero($0, casas: $0 < 10 ? 1 : 0) + " W" }, sens?.gpuC.map { Formato.temperatura($0, curta: false) }]
             .compactMap { $0 }.joined(separator: " · ")
 
         var memSub = s

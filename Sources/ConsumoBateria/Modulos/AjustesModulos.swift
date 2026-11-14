@@ -120,7 +120,7 @@ final class AjustesModulos {
 
     /// Sensores ligado, ou alguma peça de módulo ligado que lê temperatura, potência ou ventoinha.
     var precisaSensores: Bool {
-        let usam: Set<PecaModulo> = [.temperatura, .tempGPU, .potencia, .ventoinha]
+        let usam: Set<PecaModulo> = [.temperatura, .tempGPU, .potencia, .ventoinha, .ventoinhaPct]
         return modulos.contains { a in
             a.ligado && (a.modulo == .sensores || (a.config.pecas + a.config.pecasBaixo).contains { usam.contains($0.peca) })
         }

@@ -11,6 +11,31 @@ enum Entrada {
             Foto.gerar(pasta: args[i + 1])
             return
         }
+        if args.contains("--sensores") {
+            // Diagnóstico: lê os sensores duas vezes, imprime e sai.
+            let leitor = LeitorSensores()
+            var r: LeituraSensores?
+            var tempos: [Double] = []
+            for _ in 0..<2 {
+                let inicio = Date()
+                r = leitor.ler(entradaSistemaW: nil, carregadorW: nil)
+                tempos.append(Date().timeIntervalSince(inicio) * 1000)
+            }
+            func t(_ v: Double?) -> String { v.map { String(format: "%.1f °C", $0) } ?? "—" }
+            print("CPU \(t(r?.cpuC)) · GPU \(t(r?.gpuC)) · SSD \(t(r?.ssdC)) · Bateria \(t(r?.bateriaC))")
+            for v in r?.ventoinhas ?? [] {
+                print("\(v.nome): \(Formato.rpm(v.rpm)) · \(v.fracao.map { Formato.percentual($0 * 100) } ?? "—") (máx. \(v.maximoRpm.map(Formato.rpm) ?? "—"))")
+            }
+            let soc = LeitorEnergiaSoC()
+            for _ in 0..<3 {
+                RunLoop.main.run(until: Date().addingTimeInterval(2))
+                let e = soc.ler()
+                print(String(format: "GPU ligada %.0f%% · %.0f MHz (máx. %.0f) · %.1f W",
+                             e?.gpuAtivo ?? -1, e?.gpuMHz ?? -1, e?.gpuMaxMHz ?? -1, e?.gpuW ?? -1))
+            }
+            print(String(format: "1ª leitura %.0f ms, 2ª %.0f ms", tempos[0], tempos[1]))
+            return
+        }
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
         let delegado = AppDelegate(ligarTodosOsModulos: args.contains("--ligar-modulos"))

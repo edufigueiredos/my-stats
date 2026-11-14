@@ -263,6 +263,8 @@ struct EnergiaSoC: Sendable, Equatable {
     var dramW: Double? = nil
     var gpuMHz: Double? = nil
     var gpuMaxMHz: Double? = nil
+    /// % do intervalo com a GPU ligada (estados P do GPUPH), a mesma medida do iStat Menus.
+    var gpuAtivo: Double? = nil
 }
 
 /// Tudo o que os módulos leem num instante. nil = módulo desligado ou sem leitura (a tela mostra "—").

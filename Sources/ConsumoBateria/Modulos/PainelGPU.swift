@@ -54,7 +54,7 @@ struct PainelGPU: View {
     private var cartaoUso: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Uso · média de 5 s")
+                Text("Uso agora")
                     .font(.system(size: 11, weight: .semibold))
                     .tracking(0.9)
                     .textCase(.uppercase)
@@ -93,7 +93,7 @@ struct PainelGPU: View {
         var subFreq = Formato.semDado
         if let mhz, let maxMHz, maxMHz > 0 { subFreq = Formato.percentual(mhz / maxMHz * 100) + " do máx." }
         return [
-            ("Potência", w.map { Formato.numero($0, casas: 0) + " W" } ?? Formato.semDado, "agora"),
+            ("Potência", w.map { Formato.numero($0, casas: $0 < 10 ? 1 : 0) + " W" } ?? Formato.semDado, "agora"),
             ("Memória", mem.map { Formato.bytesMemoria($0) } ?? Formato.semDado, "em uso pela GPU"),
             ("Frequência", mhz.map { Formato.numero($0 / 1000, casas: 2) + " GHz" } ?? Formato.semDado, subFreq),
         ]

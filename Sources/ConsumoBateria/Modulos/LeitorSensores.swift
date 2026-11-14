@@ -22,6 +22,7 @@ final class LeitorSensores {
     private var servicos: CFArray?
     private let smc = ConexaoSMC()
     private var numVentoinhas: Int?
+    private var primeiraLeituraHID = true
 
     init() {
         let lib = dlopen("/System/Library/Frameworks/IOKit.framework/IOKit", RTLD_NOW)
@@ -55,11 +56,17 @@ final class LeitorSensores {
         var r = LeituraSensores()
         var temps: [(String, Double)] = []
         if let copiarEvento, let valorFloat {
-            for s in sensores {
-                guard let evento = copiarEvento(s.servico, 15, 0, 0) else { continue }
+            var invalidos = Set<Int>()
+            for (i, s) in sensores.enumerated() {
+                guard let evento = copiarEvento(s.servico, 15, 0, 0) else { invalidos.insert(i); continue }
                 defer { Unmanaged<CFTypeRef>.fromOpaque(evento).release() }
                 let v = valorFloat(evento, 15 << 16)
-                if v > 0, v <= 130, v.isFinite { temps.append((s.nome, v)) }
+                if v > 0, v <= 130, v.isFinite { temps.append((s.nome, v)) } else { invalidos.insert(i) }
+            }
+            // Cada serviço HID custa ~1 ms; os que já vêm sem valor (PMU tdev, -9200 °C no M5) saem da próxima volta.
+            if primeiraLeituraHID {
+                primeiraLeituraHID = false
+                sensores = sensores.enumerated().filter { !invalidos.contains($0.offset) }.map(\.element)
             }
         }
         func media(_ prefixos: [String]) -> Double? {
@@ -67,7 +74,7 @@ final class LeitorSensores {
             return v.isEmpty ? nil : v.reduce(0, +) / Double(v.count)
         }
         r.cpuC = media(["pACC MTR Temp Sensor", "eACC MTR Temp Sensor"]) ?? media(["PMU tdie"]) ?? media(["PMU TP"])
-        r.gpuC = media(["GPU MTR Temp Sensor"])
+        r.gpuC = media(["GPU MTR Temp Sensor"]) ?? mediaSMC(prefixo: "Tg")
         r.ssdC = media(["NAND CH0 temp"])
         r.bateriaC = media(["gas gauge battery"])
         // Memória e ar interno: o chip não expõe um sensor claramente identificável por nome; ficam nil.
@@ -81,6 +88,20 @@ final class LeitorSensores {
         r.carregadorW = carregadorW
         let vazio = r.cpuC == nil && r.gpuC == nil && r.todas.isEmpty && r.ventoinhas.isEmpty && r.sistemaW == nil
         return vazio ? nil : r
+    }
+
+    /// Chaves do SMC por prefixo, listadas uma vez. No M5 a GPU só aparece aqui (Tg…), não no HID.
+    private var chavesSMC: [String: [String]] = [:]
+
+    private func mediaSMC(prefixo: String) -> Double? {
+        if chavesSMC[prefixo] == nil {
+            // Até 12 chaves espalhadas bastam para a média e mantêm a leitura barata.
+            let todas = smc.chaves().filter { $0.hasPrefix(prefixo) }
+            let passo = max(todas.count / 12, 1)
+            chavesSMC[prefixo] = stride(from: 0, to: todas.count, by: passo).map { todas[$0] }
+        }
+        let v = (chavesSMC[prefixo] ?? []).compactMap { smc.ler($0) }.filter { $0 > 5 && $0 <= 130 }
+        return v.isEmpty ? nil : v.reduce(0, +) / Double(v.count)
     }
 
     private func lerVentoinhas() -> [Ventoinha] {
@@ -124,15 +145,39 @@ private final class ConexaoSMC: @unchecked Sendable {
         return r == KERN_SUCCESS && saida[40] == 0 ? saida : nil
     }
 
+    /// Todas as chaves do SMC (comando 8: chave pelo índice). Some com falha; nunca trava.
+    func chaves() -> [String] {
+        guard conexao != 0, let n = ler("#KEY"), n > 0, n < 10_000 else { return [] }
+        var lista: [String] = []
+        for i in 0..<Int(n) {
+            var pedido = [UInt8](repeating: 0, count: 80)
+            pedido[42] = 8
+            withUnsafeBytes(of: UInt32(i)) { for j in 0..<4 { pedido[44 + j] = $0[j] } }
+            guard let r = chamar(pedido) else { continue }
+            let nome = String(bytes: r[0..<4].reversed(), encoding: .ascii) ?? ""
+            if nome.count == 4 { lista.append(nome) }
+        }
+        return lista
+    }
+
+    /// Tamanho e tipo de cada chave não mudam: guardados para fazer uma chamada por leitura, não duas.
+    private var infos: [String: (UInt32, UInt32)] = [:]
+
     func ler(_ chave: String) -> Double? {
         guard conexao != 0 else { return nil }
-        var info = [UInt8](repeating: 0, count: 80)
         func gravar(_ v: UInt32, _ off: Int, em b: inout [UInt8]) { withUnsafeBytes(of: v) { for i in 0..<4 { b[off + i] = $0[i] } } }
-        gravar(Self.quatro(chave), 0, em: &info)
-        info[42] = 9 // ler informação da chave
-        guard let resp = chamar(info) else { return nil }
-        let tam = resp[28..<32].withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) }
-        let tipo = resp[32..<36].withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) }
+        let tam: UInt32, tipo: UInt32
+        if let i = infos[chave] {
+            (tam, tipo) = i
+        } else {
+            var info = [UInt8](repeating: 0, count: 80)
+            gravar(Self.quatro(chave), 0, em: &info)
+            info[42] = 9 // ler informação da chave
+            guard let resp = chamar(info) else { return nil }
+            tam = resp[28..<32].withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) }
+            tipo = resp[32..<36].withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) }
+            infos[chave] = (tam, tipo)
+        }
         guard tam > 0, tam <= 32 else { return nil }
         var pedido = [UInt8](repeating: 0, count: 80)
         gravar(Self.quatro(chave), 0, em: &pedido)

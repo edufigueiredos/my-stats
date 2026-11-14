@@ -8,6 +8,8 @@ import Observation
 final class NavegacaoPopoverModulos {
     var tela: Modulo? { didSet { aoMudar?() } }
     @ObservationIgnored var aoMudar: (() -> Void)?
+    @ObservationIgnored var alturas = MemoriaAlturasPainel()
+    @ObservationIgnored var chave: String { tela?.rawValue ?? "geral" }
 }
 
 /// Conteúdo do popover: lê o monitor no próprio corpo para atualizar ao vivo.
@@ -33,6 +35,11 @@ struct PopoverModulosAoVivo: View {
     }
 
     var body: some View {
+        conteudo.environment(\.alturaPainel, ChaveAlturaPainel(memoria: navegacao.alturas, chave: navegacao.chave))
+    }
+
+    @ViewBuilder
+    private var conteudo: some View {
         let l = monitor.leituras
         let s = monitor.series
         switch navegacao.tela {
@@ -97,6 +104,30 @@ final class ControladorModulos: NSObject, NSPopoverDelegate {
         popover.contentViewController = NSHostingController(rootView: raiz)
         reconstruirSeNecessario()
         redesenhar()
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            await self?.medirPaineisFechados()
+        }
+    }
+
+    /// Mede, fora da tela, a altura de cada painel ainda não aberto, para o primeiro clique já abrir no tamanho certo.
+    private func medirPaineisFechados() async {
+        let telas: [Modulo?] = [nil] + Modulo.allCases.map { Optional($0) }
+        for tela in telas {
+            let nav = NavegacaoPopoverModulos()
+            nav.alturas = navegacao.alturas
+            nav.tela = tela
+            guard nav.alturas.total[nav.chave] == nil else { continue }
+            let hc = NSHostingController(rootView: RaizTematica {
+                PopoverModulosAoVivo(monitor: monitor, navegacao: nav, ajustes: ajustes,
+                                     pegarSituacao: pegarSituacao, acoes: AcoesModulo())
+            })
+            hc.view.frame = NSRect(x: 0, y: 0, width: 400, height: 400)
+            for _ in 0..<4 {
+                hc.view.layoutSubtreeIfNeeded()
+                try? await Task.sleep(for: .milliseconds(40))
+            }
+        }
     }
 
     // MARK: Itens
@@ -206,6 +237,9 @@ final class ControladorModulos: NSObject, NSPopoverDelegate {
         }
         navegacao.tela = tela
         botaoAncora = botao
+        // Abre já com a altura que este painel teve da última vez, em vez da do painel anterior.
+        if let h = navegacao.alturas.total[navegacao.chave] { popover.contentSize = NSSize(width: 400, height: h) }
+        popover.contentViewController?.view.layoutSubtreeIfNeeded()
         popover.show(relativeTo: botao.bounds, of: botao, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
         atualizarAbertos()

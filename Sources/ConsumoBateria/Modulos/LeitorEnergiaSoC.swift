@@ -67,11 +67,13 @@ final class LeitorEnergiaSoC {
         var cpu = 0.0, gpu = 0.0, ane = 0.0, dram = 0.0
         var tem = (cpu: false, gpu: false, ane: false, dram: false)
         var gpuMHz: Double?
+        var gpuAtivo: Double?
         for c in lista {
             let canal = c as CFDictionary
             guard let nome = s.nome(canal)?.takeUnretainedValue() as String? else { continue }
             if nome == "GPUPH" {
                 gpuMHz = frequenciaMedia(canal, s)
+                gpuAtivo = residenciaAtiva(canal, s)
                 continue
             }
             let w = potencia(canal, s, dt)
@@ -87,6 +89,7 @@ final class LeitorEnergiaSoC {
         if tem.ane { r.aneW = ane }
         if tem.dram { r.dramW = dram }
         if let gpuMHz { r.gpuMHz = gpuMHz; r.gpuMaxMHz = frequenciasGPU.max() }
+        r.gpuAtivo = gpuAtivo
         return r == EnergiaSoC() ? nil : r
     }
 
@@ -112,11 +115,26 @@ final class LeitorEnergiaSoC {
         for i in 0..<n {
             let nome = s.nomeEstado(canal, Int32(i))?.takeUnretainedValue() as String? ?? ""
             let res = Double(s.residencia(canal, Int32(i)))
-            if nome == "OFF" || nome == "IDLE" || nome == "DOWN" { continue }
-            guard nome.hasPrefix("P"), let p = Int(nome.dropFirst()), p >= 1, p < frequenciasGPU.count else { return nil }
-            soma += res * frequenciasGPU[p]; total += res
+            if res <= 0 || nome == "OFF" || nome == "IDLE" || nome == "DOWN" { continue }
+            // O M5 tem 15 estados P e 14 frequências na tabela: o que passar do fim fica na mais alta.
+            guard nome.hasPrefix("P"), let p = Int(nome.dropFirst()), p >= 1 else { return nil }
+            soma += res * frequenciasGPU[min(p, frequenciasGPU.count - 1)]; total += res
         }
         return total > 0 ? soma / total : 0
+    }
+
+    /// % do tempo do intervalo em algum estado P (GPU ligada).
+    private func residenciaAtiva(_ canal: CFDictionary, _ s: Simbolos) -> Double? {
+        let n = Int(s.contar(canal))
+        guard n > 1 else { return nil }
+        var total = 0.0, ativo = 0.0
+        for i in 0..<n {
+            let nome = s.nomeEstado(canal, Int32(i))?.takeUnretainedValue() as String? ?? ""
+            let res = Double(s.residencia(canal, Int32(i)))
+            total += res
+            if nome.hasPrefix("P") { ativo += res }
+        }
+        return total > 0 ? min(max(ativo / total * 100, 0), 100) : nil
     }
 
     /// "voltage-states9" do pmgr: pares (frequência, tensão) de 4 bytes cada; frequência em Hz, entrada 0 = desligada.
