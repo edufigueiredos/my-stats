@@ -7,7 +7,12 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "ConsumoBateria",
-            linkerSettings: [.linkedFramework("IOKit"), .linkedFramework("ServiceManagement")]
+            linkerSettings: [
+                .linkedFramework("IOKit"),
+                .linkedFramework("ServiceManagement"),
+                .linkedFramework("CoreWLAN"),
+                .linkedFramework("SystemConfiguration"),
+            ]
         )
     ]
 )

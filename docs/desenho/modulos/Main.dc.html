@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Módulos na barra</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#F2CC7A}a:hover{color:#FFE2A3}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1240px; box-sizing: border-box; padding: 40px 48px; background: #0E0C0A; color: #F5F5F5; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 28px;">
+
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em;">Seis módulos novos, com o mesmo editor da bateria</h1>
+    <p style="margin: 0; font-size: 15px; color: rgba(255,255,255,0.66);">CPU, GPU, Memória, Disco, Rede e Sensores. Cada um vira um item na barra (ou entra num item só), monta as peças do jeito que quiser e abre o próprio painel ao clicar. Barra ampliada 2×.</p>
+  </div>
+
+  <section style="display: flex; flex-direction: column; gap: 12px;">
+    <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #F2CC7A;">Sua barra de hoje, do nosso jeito</div>
+    <div style="height: 64px; border-radius: 14px; background: linear-gradient(90deg, #4A2A63, #5B3376 60%, #4A2A63); display: flex; align-items: center; justify-content: flex-end; gap: 30px; padding: 0 28px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.10);">
+      <sc-for list="{{barra}}" as="it" hint-placeholder-count="7">
+        <div style="display: flex; align-items: center; gap: 8px; color: #FFFFFF;">
+          <sc-if value="{{it.temPonto}}" hint-placeholder-val="{{false}}">
+            <span style="width: 12px; height: 12px; border-radius: 50%; background: #5BD27A; box-shadow: 0 0 0 2px rgba(0,0,0,0.25);"></span>
+          </sc-if>
+          <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.05;">
+            <span style="font-size: 15px; font-weight: 600; letter-spacing: 0.02em;">{{it.cima}}</span>
+            <span style="font-size: 25px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em;">{{it.baixo}}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="font-size: 13px; color: rgba(255,255,255,0.62);">Igual ao seu iStat: rótulo em cima, valor embaixo. A diferença é que cada peça é editável (tamanho, cor, casas, faixa de cor) e o ponto da rede muda de cor com a latência.</div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 12px;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between;">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #F2CC7A;">Formatos prontos por módulo</div>
+      <div style="font-size: 13px; color: rgba(255,255,255,0.62);">Ponto de partida; depois o editor de peças muda qualquer coisa</div>
+    </div>
+    <div style="display: grid; grid-template-columns: 150px repeat(5, minmax(0, 1fr)); gap: 8px; align-items: stretch;">
+      <div></div>
+      <sc-for list="{{formatos}}" as="f" hint-placeholder-count="5">
+        <div style="font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.75); padding: 0 4px 2px;">{{f}}</div>
+      </sc-for>
+      <sc-for list="{{modulos}}" as="m" hint-placeholder-count="6">
+        <div style="display: flex; flex-direction: column; justify-content: center; gap: 2px; padding-left: 4px;">
+          <span style="font-size: 15px; font-weight: 700;">{{m.nome}}</span>
+          <span style="font-size: 12px; color: rgba(255,255,255,0.62);">{{m.dica}}</span>
+        </div>
+        <div style="height: 56px; border-radius: 10px; background: #2B1F38; display: flex; align-items: center; justify-content: center; color: #FFFFFF;">
+          <div style="display: flex; flex-direction: column; line-height: 1.05;">
+            <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.03em;">{{m.rotulo}}</span>
+            <span style="font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums;">{{m.valor}}</span>
+          </div>
+        </div>
+        <div style="height: 56px; border-radius: 10px; background: #2B1F38; display: flex; align-items: center; justify-content: center; gap: 8px; color: #FFFFFF;">
+          <div style="width: 54px; height: 24px; display: flex; align-items: flex-end; gap: 2px; border-bottom: 1px solid rgba(255,255,255,0.35);">
+            <sc-for list="{{m.barras}}" as="b" hint-placeholder-count="12">
+              <span style="{{b}}"></span>
+            </sc-for>
+          </div>
+          <span style="font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums;">{{m.valor}}</span>
+        </div>
+        <div style="height: 56px; border-radius: 10px; background: #2B1F38; display: flex; align-items: center; justify-content: center; gap: 7px; color: #FFFFFF;">
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="{{m.icone}}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <span style="font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums;">{{m.valor}}</span>
+        </div>
+        <div style="height: 56px; border-radius: 10px; background: #2B1F38; display: flex; align-items: center; justify-content: center; gap: 8px; color: #FFFFFF;">
+          <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="3.2"></circle><circle cx="12" cy="12" r="9" fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="{{m.anel}}" transform="rotate(-90 12 12)"></circle></svg>
+          <span style="font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums;">{{m.valor}}</span>
+        </div>
+        <div style="height: 56px; border-radius: 10px; background: #2B1F38; display: flex; align-items: center; justify-content: center; color: #FFFFFF;">
+          <span style="font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: pre-line; text-align: center; line-height: 1.1;">{{m.compacto}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px;">
+    <section style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #F2CC7A;">Juntos ou separados</div>
+      <sc-for list="{{agrupar}}" as="g" hint-placeholder-count="3">
+        <div style="{{g.cartao}}">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 15px; font-weight: 700;">{{g.titulo}}</span>
+              <span style="font-size: 13px; color: rgba(255,255,255,0.62);">{{g.texto}}</span>
+            </div>
+            <sc-if value="{{g.ativo}}" hint-placeholder-val="{{false}}">
+              <span style="font-size: 12px; font-weight: 700; color: #1F1505; background: linear-gradient(#F2CC7A, #BD8A33); padding: 4px 10px; border-radius: 10px; white-space: nowrap;">Padrão</span>
+            </sc-if>
+          </div>
+          <div style="height: 38px; border-radius: 9px; background: #2B1F38; display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 0 12px; color: #FFFFFF;">
+            <sc-for list="{{g.itens}}" as="i" hint-placeholder-count="4">
+              <span style="{{i.estilo}}">{{i.texto}}</span>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #F2CC7A;">Cor por faixa (opcional)</div>
+      <div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 14px; background: rgba(255,255,255,0.06);">
+        <span style="font-size: 13px; color: rgba(255,255,255,0.66);">Barra monocromática por padrão. Ligando as faixas, só o valor muda de cor, e também de peso, para não depender só da cor.</span>
+        <sc-for list="{{faixas}}" as="x" hint-placeholder-count="3">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="width: 150px; font-size: 13px; color: rgba(255,255,255,0.75);">{{x.rotulo}}</span>
+            <div style="flex: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;">
+              <sc-for list="{{x.casos}}" as="c" hint-placeholder-count="3">
+                <div style="height: 44px; border-radius: 9px; background: #2B1F38; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                  <sc-if value="{{c.ponto}}" hint-placeholder-val="{{false}}">
+                    <span style="{{c.pontoEstilo}}"></span>
+                  </sc-if>
+                  <span style="{{c.estilo}}">{{c.texto}}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 14px; background: rgba(255,255,255,0.06);">
+        <span style="font-size: 15px; font-weight: 700;">Ao clicar</span>
+        <span style="font-size: 13px; color: rgba(255,255,255,0.66);">Clique abre o painel do módulo. Clique direito abre um menu rápido: Preferências do módulo, Monitor de Atividade, Esconder. Num item só, abre a Visão geral, de onde se entra em cada painel.</span>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const barra = [
+      { cima: 'CPU', baixo: '83%' },
+      { cima: 'GPU', baixo: '53%' },
+      { cima: 'SSD', baixo: '44%' },
+      { cima: 'MEM', baixo: '50%' },
+      { cima: '', baixo: '6 ms', temPonto: true },
+      { cima: '91° · 63°', baixo: '100 W' },
+      { cima: '80%', baixo: '0 %/h' }
+    ];
+    const formatos = ['Rótulo e valor', 'Gráfico e valor', 'Ícone e valor', 'Anel e valor', 'Compacto'];
+    const barras = (vals) => vals.map((v) => 'flex: 1; border-radius: 1px; background: #FFFFFF; height: ' + Math.max(2, Math.round(v / 100 * 24)) + 'px; opacity: 0.9;');
+    const anel = (p) => (Math.round(56.5 * p) / 100) + ' 56.5';
+    const modulos = [
+      { nome: 'CPU', dica: 'uso total', rotulo: 'CPU', valor: '83%', compacto: 'CPU 83%', anel: anel(83),
+        barras: barras([40, 55, 48, 62, 70, 66, 74, 81, 77, 85, 80, 83]),
+        icone: 'M7 7h10v10H7zM9.5 3v4M14.5 3v4M9.5 17v4M14.5 17v4M3 9.5h4M3 14.5h4M17 9.5h4M17 14.5h4' },
+      { nome: 'GPU', dica: 'uso total', rotulo: 'GPU', valor: '53%', compacto: 'GPU 53%', anel: anel(53),
+        barras: barras([20, 22, 30, 45, 60, 58, 50, 47, 55, 52, 49, 53]),
+        icone: 'M3 7h18v10H3zM7 17v3M17 17v3M8 12a2 2 0 1 0 0 .01M14 10h4M14 14h4' },
+      { nome: 'Memória', dica: 'usada ou pressão', rotulo: 'MEM', valor: '50%', compacto: 'MEM 50%', anel: anel(50),
+        barras: barras([48, 48, 49, 49, 50, 50, 51, 50, 50, 49, 50, 50]),
+        icone: 'M4 8h16v8H4zM8 8v8M12 8v8M16 8v8M6 16v3M18 16v3' },
+      { nome: 'Disco', dica: 'ocupado ou leitura/escrita', rotulo: 'SSD', valor: '44%', compacto: '↓ 120 MB/s\n↑ 8 MB/s', anel: anel(44),
+        barras: barras([5, 8, 60, 90, 35, 10, 6, 4, 20, 45, 12, 8]),
+        icone: 'M4 6h16v12H4zM8 14h.01M12 14h6' },
+      { nome: 'Rede', dica: 'latência ou velocidade', rotulo: 'PING', valor: '6 ms', compacto: '↓ 12,4 MB/s\n↑ 820 KB/s', anel: anel(6),
+        barras: barras([8, 7, 6, 9, 6, 5, 6, 7, 30, 8, 6, 6]),
+        icone: 'M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01' },
+      { nome: 'Sensores', dica: 'temperatura e potência', rotulo: 'CPU °C', valor: '91°', compacto: '91° · 63°\n100 W', anel: anel(91),
+        barras: barras([70, 72, 75, 80, 84, 88, 90, 92, 91, 90, 91, 91]),
+        icone: 'M10 4a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0zM12 9v8' }
+    ];
+    const cartao = (ativo) => 'display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 14px; background: rgba(255,255,255,0.06);' + (ativo ? ' box-shadow: inset 0 0 0 1.5px rgba(242,204,122,0.55);' : '');
+    const chip = 'font-size: 13px; font-weight: 700; padding: 3px 8px; border-radius: 6px; font-variant-numeric: tabular-nums; ';
+    const solto = chip + 'background: transparent;';
+    const junto = chip + 'background: rgba(255,255,255,0.10);';
+    const agrupar = [
+      { titulo: 'Um item por módulo', texto: 'Cada um abre o próprio painel. Como o seu iStat hoje.', ativo: true, cartao: cartao(true),
+        itens: [{ texto: 'CPU 83%', estilo: solto }, { texto: 'GPU 53%', estilo: solto }, { texto: 'MEM 50%', estilo: solto }, { texto: '● 6 ms', estilo: solto }] },
+      { titulo: 'Um item só', texto: 'Menos espaço na barra; o clique abre a Visão geral.', cartao: cartao(false),
+        itens: [{ texto: '83 · 53 · 50% · 6 ms · 91°', estilo: junto }] },
+      { titulo: 'Grupos', texto: 'Você escolhe quem vai junto, por exemplo CPU com GPU.', cartao: cartao(false),
+        itens: [{ texto: 'CPU 83 · GPU 53', estilo: junto }, { texto: 'MEM 50 · SSD 44', estilo: junto }, { texto: '● 6 ms', estilo: solto }] }
+    ];
+    const base = 'font-size: 18px; font-variant-numeric: tabular-nums; ';
+    const ponto = (c) => 'width: 10px; height: 10px; border-radius: 50%; background: ' + c + ';';
+    const faixas = [
+      { rotulo: 'CPU: até 60 · 60–90 · acima', casos: [
+        { texto: '35%', estilo: base + 'font-weight: 600; color: #FFFFFF;' },
+        { texto: '83%', estilo: base + 'font-weight: 700; color: #F2CC7A;' },
+        { texto: '97%', estilo: base + 'font-weight: 800; color: #FF8A5C;' } ] },
+      { rotulo: 'Rede: latência', casos: [
+        { texto: '6 ms', ponto: true, pontoEstilo: ponto('#5BD27A'), estilo: base + 'font-weight: 700; color: #FFFFFF;' },
+        { texto: '84 ms', ponto: true, pontoEstilo: ponto('#F2CC7A'), estilo: base + 'font-weight: 700; color: #FFFFFF;' },
+        { texto: 'sem rede', ponto: true, pontoEstilo: 'width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 0 0 2px #FF8A5C;', estilo: 'font-size: 15px; font-weight: 600; color: #FFB8A0;' } ] },
+      { rotulo: 'Temperatura', casos: [
+        { texto: '58°', estilo: base + 'font-weight: 600; color: #FFFFFF;' },
+        { texto: '84°', estilo: base + 'font-weight: 700; color: #F2CC7A;' },
+        { texto: '99°', estilo: base + 'font-weight: 800; color: #FF8A5C;' } ] }
+    ];
+    return { barra, formatos, modulos, agrupar, faixas };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,6 +1,9 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// Quais seções a janela mostra: `.tudo` é a janela de sempre; as outras alimentam o menu lateral (PreferenciasMenu.swift).
+enum SecaoPreferencias { case tudo, geral, bateria, temas, avisos }
+
 /// Janela de Preferências (Preferencias.dc.html). Todos os controles são desenhados, sem Toggle, Picker nem
 /// Stepper nativos, para o ImageRenderer gerar o PNG fiel. `paraFoto` tira a ScrollView e fixa a largura.
 struct JanelaPreferencias: View {
@@ -9,6 +12,9 @@ struct JanelaPreferencias: View {
     var alternarAbrirAoIniciar: (Bool) -> Void
     var estadoInicial: EstadoBarra = .descarregando
     var paraFoto = false
+    var pagina: SecaoPreferencias = .tudo
+    /// Dentro de um container que já rola: sem ScrollView nem tamanho mínimo.
+    var embutida = false
 
     @Environment(\.estilo) private var estilo
     @AppStorage(Ajustes.chaveTema) private var nomeTema = TemaApp.gold.rawValue
@@ -50,7 +56,9 @@ struct JanelaPreferencias: View {
 
     init(ajustes: Ajustes, abrirAoIniciar: Bool, alternarAbrirAoIniciar: @escaping (Bool) -> Void,
          estadoInicial: EstadoBarra = .descarregando, paraFoto: Bool = false,
-         ajustesAbertosInicial: Set<EstadoBarra> = []) {
+         ajustesAbertosInicial: Set<EstadoBarra> = [], pagina: SecaoPreferencias = .tudo, embutida: Bool = false) {
+        self.pagina = pagina
+        self.embutida = embutida
         self.ajustes = ajustes
         self.abrirAoIniciar = abrirAoIniciar
         self.alternarAbrirAoIniciar = alternarAbrirAoIniciar
@@ -62,7 +70,9 @@ struct JanelaPreferencias: View {
 
     var body: some View {
         Group {
-            if paraFoto {
+            if embutida {
+                conteudo
+            } else if paraFoto {
                 conteudo.frame(width: 820)
             } else {
                 ScrollView { conteudo }.frame(minWidth: 680, idealWidth: 820, minHeight: 520, idealHeight: 760)
@@ -72,11 +82,24 @@ struct JanelaPreferencias: View {
 
     private var conteudo: some View {
         VStack(alignment: .leading, spacing: 26) {
-            secaoItem
-            secaoRitmo
-            secaoTema
-            SecaoPainelPrefs(ajustes: ajustes)
-            secaoAvisos
+            switch pagina {
+            case .tudo:
+                secaoItem
+                secaoRitmo
+                secaoTema
+                SecaoPainelPrefs(ajustes: ajustes)
+                secaoAvisos(completa: true)
+            case .bateria:
+                secaoItem
+                secaoRitmo
+                SecaoPainelPrefs(ajustes: ajustes)
+            case .temas:
+                secaoTema
+            case .avisos:
+                secaoAvisos(completa: false)
+            case .geral:
+                secaoGeral
+            }
         }
         .padding(.horizontal, 28)
         .padding(.vertical, 22)
@@ -809,9 +832,9 @@ struct JanelaPreferencias: View {
 
     // MARK: Avisos e geral
 
-    private var secaoAvisos: some View {
+    private func secaoAvisos(completa: Bool) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            titulo("Avisos e geral")
+            titulo(completa ? "Avisos e geral" : "Avisos")
             Cartao(padding: 0) {
                 VStack(spacing: 0) {
                     avisoLinha("Avisar quando o consumo passar de", ajustes.avisoConsumoAcima, sufixo: " %/h", passo: 1, faixa: 5...60) {
@@ -829,8 +852,28 @@ struct JanelaPreferencias: View {
                     avisoLinha("Avisar se o carregador for fraco (menos de)", ajustes.avisoCarregadorFraco, sufixo: " W", passo: 5, faixa: 5...100) {
                         ajustes.avisoCarregadorFraco = $0
                     }
-                    divisor
-                    LinhaAlternar(titulo: "Abrir ao iniciar o Mac", ligado: abrirAoIniciar, aoMudar: alternarAbrirAoIniciar)
+                    if completa {
+                        divisor
+                        linhaGeralAbrir
+                        divisor
+                        linhaHistorico
+                    }
+                }
+                .padding(.horizontal, 14)
+            }
+        }
+    }
+
+    private var linhaGeralAbrir: some View {
+        LinhaAlternar(titulo: "Abrir ao iniciar o Mac", ligado: abrirAoIniciar, aoMudar: alternarAbrirAoIniciar)
+    }
+
+    private var secaoGeral: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            titulo("Geral")
+            Cartao(padding: 0) {
+                VStack(spacing: 0) {
+                    linhaGeralAbrir
                     divisor
                     linhaHistorico
                 }

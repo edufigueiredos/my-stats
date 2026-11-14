@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Preferências dos módulos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#F2CC7A}a:hover{color:#FFE2A3}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 1180px; height: 1320px; box-sizing: border-box; background: #13100C; border-radius: 14px; border: 1px solid rgba(255,255,255,0.10); color: #F5F5F5; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif; display: flex; overflow: hidden;">
+
+  <nav style="width: 230px; flex-shrink: 0; box-sizing: border-box; padding: 18px 12px; background: rgba(255,255,255,0.03); border-right: 1px solid rgba(255,255,255,0.07); display: flex; flex-direction: column; gap: 2px;">
+    <div style="display: flex; gap: 8px; padding: 0 6px 18px;">
+      <span style="width: 12px; height: 12px; border-radius: 50%; background: #FF5F57;"></span>
+      <span style="width: 12px; height: 12px; border-radius: 50%; background: #FEBC2E;"></span>
+      <span style="width: 12px; height: 12px; border-radius: 50%; background: #28C840;"></span>
+    </div>
+    <sc-for list="{{menu}}" as="m" hint-placeholder-count="12">
+      <sc-if value="{{m.titulo}}" hint-placeholder-val="{{false}}">
+        <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.5); padding: 14px 10px 6px;">{{m.nome}}</span>
+      </sc-if>
+      <sc-if value="{{m.item}}" hint-placeholder-val="{{true}}">
+        <span style="{{m.estilo}}">{{m.nome}}</span>
+      </sc-if>
+    </sc-for>
+  </nav>
+
+  <main style="flex: 1; min-width: 0; box-sizing: border-box; padding: 26px 32px; display: flex; flex-direction: column; gap: 22px;">
+
+    <section style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between;">
+        <div style="display: flex; flex-direction: column; gap: 3px;">
+          <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.01em;">Módulos na barra</h1>
+          <span style="font-size: 14px; color: rgba(255,255,255,0.62);">Arraste para mudar a ordem. "Junto com" põe dois ou mais módulos no mesmo item.</span>
+        </div>
+        <div style="display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: rgba(255,255,255,0.06);">
+          <span style="font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 8px; background: linear-gradient(#F2CC7A, #BD8A33); color: #1F1505;">Um por módulo</span>
+          <span style="font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 8px; color: rgba(255,255,255,0.7);">Um item só</span>
+          <span style="font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 8px; color: rgba(255,255,255,0.7);">Grupos</span>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; border-radius: 14px; background: rgba(255,255,255,0.05); padding: 4px 16px;">
+        <sc-for list="{{modulos}}" as="m" hint-placeholder-count="7">
+          <div style="display: flex; align-items: center; gap: 14px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M4 3h.01M4 7h.01M4 11h.01M10 3h.01M10 7h.01M10 11h.01" stroke="rgba(255,255,255,0.45)" stroke-width="2.4" stroke-linecap="round"></path></svg>
+            <span style="width: 110px; font-size: 15px; font-weight: 600;">{{m.nome}}</span>
+            <div style="width: 150px; height: 34px; border-radius: 8px; background: #2B1F38; display: flex; align-items: center; justify-content: center; color: #FFFFFF;">
+              <div style="display: flex; flex-direction: column; line-height: 1.05; align-items: center;">
+                <span style="font-size: 9px; font-weight: 600;">{{m.cima}}</span>
+                <span style="font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums;">{{m.baixo}}</span>
+              </div>
+            </div>
+            <span style="flex: 1; font-size: 13px; color: rgba(255,255,255,0.62);">{{m.formato}}</span>
+            <span style="font-size: 13px; color: rgba(255,255,255,0.75); padding: 5px 10px; border-radius: 8px; background: rgba(255,255,255,0.06);">Junto com: {{m.junto}}</span>
+            <span style="{{m.chave}}"><span style="{{m.bolinha}}"></span></span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between;">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 700;">CPU · editor do item</h2>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: rgba(255,255,255,0.7);">
+          <span>Atualizar a cada</span>
+          <sc-for list="{{intervalos}}" as="i" hint-placeholder-count="3">
+            <span style="{{i.estilo}}">{{i.nome}}</span>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+        <div style="height: 76px; border-radius: 12px; background: #2B1F38; display: flex; align-items: center; justify-content: center; gap: 10px; color: #FFFFFF; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);">
+          <div style="display: flex; flex-direction: column; line-height: 1.05; padding: 4px 8px; border-radius: 6px; box-shadow: inset 0 0 0 1.5px #F2CC7A;">
+            <span style="font-size: 13px; font-weight: 600;">CPU</span>
+            <span style="font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums;">83%</span>
+          </div>
+          <div style="width: 60px; height: 30px; display: flex; align-items: flex-end; gap: 2px;">
+            <sc-for list="{{mini}}" as="b" hint-placeholder-count="12"><span style="{{b}}"></span></sc-for>
+          </div>
+        </div>
+        <div style="height: 76px; border-radius: 12px; background: #ECE8E2; display: flex; align-items: center; justify-content: center; gap: 10px; color: #111111;">
+          <div style="display: flex; flex-direction: column; line-height: 1.05; padding: 4px 8px;">
+            <span style="font-size: 13px; font-weight: 600;">CPU</span>
+            <span style="font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums;">83%</span>
+          </div>
+          <div style="width: 60px; height: 30px; display: flex; align-items: flex-end; gap: 2px;">
+            <sc-for list="{{miniClaro}}" as="b" hint-placeholder-count="12"><span style="{{b}}"></span></sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px;">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 14px; background: rgba(255,255,255,0.05);">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.6);">Peças da CPU · arraste para uma linha</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+              <sc-for list="{{pecas}}" as="p" hint-placeholder-count="14">
+                <span style="font-size: 13px; font-weight: 600; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85);">{{p}}</span>
+              </sc-for>
+            </div>
+          </div>
+          <sc-for list="{{linhasItem}}" as="l" hint-placeholder-count="2">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 14px; background: rgba(255,255,255,0.05);">
+              <span style="width: 120px; font-size: 13px; color: rgba(255,255,255,0.7);">{{l.nome}}</span>
+              <div style="flex: 1; min-height: 40px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.18); display: flex; align-items: center; gap: 6px; padding: 0 8px;">
+                <sc-for list="{{l.pecas}}" as="p" hint-placeholder-count="2">
+                  <span style="{{p.estilo}}">{{p.nome}}</span>
+                </sc-for>
+              </div>
+              <span style="font-size: 12px; color: rgba(255,255,255,0.62); padding: 5px 9px; border-radius: 8px; background: rgba(255,255,255,0.06);">{{l.alinhar}}</span>
+            </div>
+          </sc-for>
+          <div style="display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 14px; background: rgba(255,255,255,0.05);">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.6);">Ao clicar</span>
+            <div style="display: flex; gap: 6px;">
+              <sc-for list="{{clique}}" as="c" hint-placeholder-count="3">
+                <span style="{{c.estilo}}">{{c.nome}}</span>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 14px; background: rgba(255,255,255,0.05);">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.6);">Avisos</span>
+            <sc-for list="{{avisos}}" as="a" hint-placeholder-count="2">
+              <div style="display: flex; align-items: center; gap: 12px; font-size: 14px;">
+                <span style="flex: 1;">{{a.texto}}</span>
+                <span style="{{a.chave}}"><span style="{{a.bolinha}}"></span></span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 14px; background: #1E1A15; box-shadow: 0 12px 30px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.10); align-self: start;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 15px; font-weight: 700;">Ajustar peça · Uso %</span>
+            <span style="font-size: 12px; color: rgba(255,255,255,0.55);">linha de baixo</span>
+          </div>
+          <div style="height: 54px; border-radius: 10px; background: #2B1F38; display: flex; align-items: center; justify-content: center; color: #FFFFFF; font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums;">83%</div>
+          <sc-for list="{{ajustes}}" as="a" hint-placeholder-count="6">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px;">
+              <span style="color: rgba(255,255,255,0.7);">{{a.r}}</span>
+              <span style="font-weight: 600; padding: 5px 10px; border-radius: 8px; background: rgba(255,255,255,0.07); font-variant-numeric: tabular-nums;">{{a.v}}</span>
+            </div>
+          </sc-for>
+          <div style="display: flex; justify-content: space-between; padding-top: 4px;">
+            <span style="font-size: 13px; color: rgba(255,255,255,0.7);">← → mover</span>
+            <span style="font-size: 13px; font-weight: 600; color: #FFB8A0;">Tirar</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1180,"height":1320}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const itemBase = 'font-size: 14px; padding: 8px 10px; border-radius: 8px; ';
+    const nomes = [['Geral'], ['Bateria'], ['Módulos', 't'], ['CPU', 's'], ['GPU'], ['Memória'], ['Disco'], ['Rede'], ['Sensores'], ['Aparência', 't'], ['Temas'], ['Avisos']];
+    const menu = nomes.map(([nome, tipo]) => ({ nome, titulo: tipo === 't', item: tipo !== 't',
+      estilo: itemBase + (tipo === 's' ? 'background: rgba(242,204,122,0.16); color: #F2CC7A; font-weight: 600;' : 'color: rgba(255,255,255,0.8);') }));
+    const chaveOn = 'width: 38px; height: 22px; border-radius: 11px; background: linear-gradient(#F2CC7A, #BD8A33); display: flex; align-items: center; justify-content: flex-end; padding: 2px; box-sizing: border-box;';
+    const chaveOff = 'width: 38px; height: 22px; border-radius: 11px; background: rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: flex-start; padding: 2px; box-sizing: border-box;';
+    const bolinha = 'width: 18px; height: 18px; border-radius: 50%; background: #FFFFFF;';
+    const modulos = [
+      ['CPU', 'CPU', '83%', 'Rótulo e valor', '—', true],
+      ['GPU', 'GPU', '53%', 'Rótulo e valor', '—', true],
+      ['Disco', 'SSD', '44%', 'Rótulo e valor', '—', true],
+      ['Memória', 'MEM', '50%', 'Rótulo e valor', '—', true],
+      ['Rede', '●', '6 ms', 'Ponto e latência', '—', true],
+      ['Sensores', '91° · 63°', '100 W', 'Duas linhas', '—', true],
+      ['Bateria', '80%', '0 %/h', 'Duas linhas', '—', true]
+    ].map(([nome, cima, baixo, formato, junto, on]) => ({ nome, cima, baixo, formato, junto, chave: on ? chaveOn : chaveOff, bolinha }));
+    const pill = 'font-size: 13px; font-weight: 600; padding: 5px 10px; border-radius: 8px; ';
+    const ativo = pill + 'background: linear-gradient(#F2CC7A, #BD8A33); color: #1F1505;';
+    const inativo = pill + 'background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.75);';
+    const intervalos = ['1 s', '2 s', '5 s'].map((nome, i) => ({ nome, estilo: i === 1 ? ativo : inativo }));
+    const vals = [40, 55, 48, 62, 70, 66, 74, 81, 77, 85, 80, 83];
+    const mini = vals.map((v) => 'flex: 1; border-radius: 1px; height: ' + Math.round(v / 100 * 30) + 'px; background: #FFFFFF;');
+    const miniClaro = vals.map((v) => 'flex: 1; border-radius: 1px; height: ' + Math.round(v / 100 * 30) + 'px; background: #111111;');
+    const pecas = ['Rótulo', 'Uso %', 'Apps %', 'Sistema %', 'Gráfico', 'Núcleos', 'Temperatura', 'Potência W', 'Carga média', 'Ícone', 'Anel', 'Texto livre', 'Separador ·', 'Horário'];
+    const pecaLinha = 'font-size: 13px; font-weight: 700; padding: 6px 10px; border-radius: 8px; background: rgba(242,204,122,0.18); color: #F2CC7A;';
+    const pecaSel = pecaLinha + ' box-shadow: inset 0 0 0 1.5px #F2CC7A;';
+    const linhasItem = [
+      { nome: 'Linha de cima', alinhar: 'Esquerda', pecas: [{ nome: 'Rótulo', estilo: pecaLinha }] },
+      { nome: 'Linha de baixo', alinhar: 'Esquerda', pecas: [{ nome: 'Uso %', estilo: pecaSel }, { nome: 'Gráfico', estilo: pecaLinha }] }
+    ];
+    const clique = ['Painel da CPU', 'Visão geral', 'Monitor de Atividade'].map((nome, i) => ({ nome, estilo: i === 0 ? ativo : inativo }));
+    const avisos = [
+      { texto: 'Avisar quando passar de 90% por 2 min', chave: chaveOn, bolinha },
+      { texto: 'Avisar quando a CPU passar de 95 °C', chave: chaveOff, bolinha }
+    ];
+    const ajustes = [
+      { r: 'Tamanho', v: '13 pt' },
+      { r: 'Peso', v: 'Negrito' },
+      { r: 'Casas decimais', v: '0' },
+      { r: 'Cor', v: 'Por faixa' },
+      { r: 'Faixas', v: '60 · 90 %' },
+      { r: 'Altura', v: '0 pt' }
+    ];
+    return { menu, modulos, intervalos, mini, miniClaro, pecas, linhasItem, clique, avisos, ajustes };
+  }
+}
+</script>
+</body>
+</html>

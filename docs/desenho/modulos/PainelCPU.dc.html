@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Painel da CPU</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#F2CC7A}a:hover{color:#FFE2A3}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 400px; height: 1240px; box-sizing: border-box; padding: 18px 16px 14px; background: #13100C; border-radius: 16px; border: 1px solid rgba(255,255,255,0.10); color: #F5F5F5; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 14px;">
+
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <div style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(#F2CC7A, #BD8A33); display: flex; align-items: center; justify-content: center; color: #1F1505; flex-shrink: 0;">
+      <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v10H7zM9.5 3v4M14.5 3v4M9.5 17v4M14.5 17v4M3 9.5h4M3 14.5h4M17 9.5h4M17 14.5h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
+      <div style="font-size: 17px; font-weight: 700;">CPU</div>
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255,255,255,0.62);"><span style="width: 7px; height: 7px; border-radius: 50%; background: #F2CC7A;"></span>Puxada há 6 min · 16 núcleos</div>
+    </div>
+    <button aria-label="Preferências da CPU" style="width: 32px; height: 32px; border-radius: 16px; border: none; background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center;">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.3" fill="none" stroke="currentColor" stroke-width="1.4"></circle><path d="M8 1.5v1.8M8 12.7v1.8M1.5 8h1.8M12.7 8h1.8M3.4 3.4l1.3 1.3M11.3 11.3l1.3 1.3M3.4 12.6l1.3-1.3M11.3 4.7l1.3-1.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path></svg>
+    </button>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 12px; padding: 16px; border-radius: 14px; background: rgba(255,255,255,0.06);">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0;">
+      <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.6);">Uso · média de 5 s</div>
+      <div style="display: flex; align-items: baseline; gap: 4px; font-variant-numeric: tabular-nums;">
+        <span style="font-size: 46px; font-weight: 700; letter-spacing: -0.03em; color: #F2CC7A;">83</span>
+        <span style="font-size: 20px; font-weight: 600; color: rgba(255,255,255,0.75);">%</span>
+      </div>
+      <div style="display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: rgba(255,255,255,0.10);">
+        <span style="width: 61%; background: #E0B357;"></span>
+        <span style="width: 22%; background: rgba(255,255,255,0.45);"></span>
+      </div>
+      <div style="display: flex; gap: 12px; font-size: 12px; color: rgba(255,255,255,0.66); font-variant-numeric: tabular-nums;">
+        <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 8px; height: 8px; border-radius: 2px; background: #E0B357;"></span>Apps 61%</span>
+        <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 8px; height: 8px; border-radius: 2px; background: rgba(255,255,255,0.45);"></span>Sistema 22%</span>
+        <span>Livre 17%</span>
+      </div>
+    </div>
+    <div style="position: relative; width: 92px; height: 92px; flex-shrink: 0;">
+      <svg width="92" height="92" viewBox="0 0 96 96" aria-hidden="true"><circle cx="48" cy="48" r="40" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="8"></circle><circle cx="48" cy="48" r="40" fill="none" stroke="#E0B357" stroke-width="8" stroke-linecap="round" stroke-dasharray="208.6 251.3" transform="rotate(-90 48 48)"></circle></svg>
+      <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-variant-numeric: tabular-nums;">
+        <span style="font-size: 21px; font-weight: 700;">91°</span>
+        <span style="font-size: 11px; color: rgba(255,255,255,0.62);">38 W</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 6px;">
+    <sc-for list="{{periodos}}" as="p" hint-placeholder-count="4">
+      <span style="{{p.estilo}}">{{p.nome}}</span>
+    </sc-for>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.06);">
+    <div style="height: 96px; display: flex; align-items: flex-end; gap: 3px;">
+      <sc-for list="{{historico}}" as="h" hint-placeholder-count="30">
+        <div style="flex: 1; display: flex; flex-direction: column-reverse; height: 96px;">
+          <span style="{{h.sistema}}"></span>
+          <span style="{{h.apps}}"></span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display: flex; justify-content: space-between; font-size: 11px; color: rgba(255,255,255,0.55); font-variant-numeric: tabular-nums;"><span>14:50</span><span>14:55</span><span>agora</span></div>
+  </div>
+
+  <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.62); margin-top: 2px;">Núcleos</div>
+  <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.06);">
+    <sc-for list="{{grupos}}" as="g" hint-placeholder-count="2">
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: rgba(255,255,255,0.66);"><span>{{g.nome}}</span><span style="font-variant-numeric: tabular-nums;">{{g.media}}</span></div>
+        <div style="height: 40px; display: flex; align-items: flex-end; gap: 4px;">
+          <sc-for list="{{g.nucleos}}" as="n" hint-placeholder-count="12">
+            <div style="flex: 1; height: 40px; border-radius: 3px; background: rgba(255,255,255,0.08); display: flex; align-items: flex-end; overflow: hidden;">
+              <span style="{{n}}"></span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 2px;">
+    <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.62);">Quem mais usa</span>
+    <span style="font-size: 12px; color: rgba(255,255,255,0.55);">100% = 1 núcleo</span>
+  </div>
+  <div style="display: flex; flex-direction: column; padding: 4px 12px; border-radius: 12px; background: rgba(255,255,255,0.06);">
+    <sc-for list="{{apps}}" as="a" hint-placeholder-count="4">
+      <div style="display: flex; flex-direction: column; gap: 5px; padding: 8px 0;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="{{a.icone}}">{{a.letra}}</span>
+          <span style="flex: 1; font-size: 14px;">{{a.nome}}</span>
+          <span style="font-size: 14px; font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.8);">{{a.valor}}</span>
+        </div>
+        <div style="margin-left: 34px; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.08);"><div style="{{a.barra}}"></div></div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display: flex; flex-direction: column; padding: 4px 12px; border-radius: 12px; background: rgba(255,255,255,0.06);">
+    <sc-for list="{{linhas}}" as="l" hint-placeholder-count="4">
+      <div style="display: flex; justify-content: space-between; padding: 7px 0; font-size: 14px;">
+        <span style="color: rgba(255,255,255,0.68);">{{l.r}}</span>
+        <span style="font-variant-numeric: tabular-nums;">{{l.v}}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
+    <button style="height: 40px; border-radius: 20px; border: none; background: linear-gradient(#F2CC7A, #BD8A33); color: #1F1505; font-size: 15px; font-weight: 700; box-shadow: 0 2px 10px rgba(224,179,87,0.35);">Abrir Monitor de Atividade</button>
+    <div style="display: flex; justify-content: space-between; font-size: 15px; color: rgba(255,255,255,0.75); padding: 0 6px;"><span>Visão geral</span><span>Sair</span></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":400,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const chip = 'height: 26px; padding: 0 11px; border-radius: 13px; font-size: 13px; font-weight: 600; display: flex; align-items: center; ';
+    const periodos = ['1 min', '10 min', '1 h', '24 h'].map((nome, i) => ({ nome,
+      estilo: chip + (i === 1 ? 'background: linear-gradient(#F2CC7A, #BD8A33); color: #1F1505; box-shadow: 0 2px 10px rgba(224,179,87,0.35);' : 'background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.66);') }));
+    const ap = [22, 25, 24, 30, 28, 35, 40, 38, 44, 50, 48, 52, 55, 58, 54, 60, 62, 58, 64, 66, 62, 60, 63, 65, 61, 64, 62, 60, 63, 61];
+    const si = [8, 9, 8, 10, 9, 11, 12, 12, 14, 15, 16, 15, 18, 19, 18, 20, 21, 20, 22, 22, 21, 20, 22, 23, 21, 22, 22, 21, 22, 22];
+    const historico = ap.map((a, i) => ({
+      apps: 'display: block; height: ' + Math.round(a * 0.96) + 'px; background: #E0B357; border-radius: 2px 2px 0 0;',
+      sistema: 'display: block; height: ' + Math.round(si[i] * 0.96) + 'px; background: rgba(255,255,255,0.45);'
+    }));
+    const nucleo = (v) => 'display: block; width: 100%; height: ' + v + '%; background: ' + (v >= 90 ? '#F2CC7A' : '#E0B357') + '; opacity: ' + (v >= 90 ? 1 : 0.8) + ';';
+    const grupos = [
+      { nome: 'Desempenho · 12', media: 'média 91%', nucleos: [98, 95, 92, 88, 97, 90, 86, 94, 91, 89, 85, 93].map(nucleo) },
+      { nome: 'Eficiência · 4', media: 'média 47%', nucleos: [52, 44, 49, 41].map(nucleo) }
+    ];
+    const icone = (cor) => 'width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #1F1505; background: ' + cor + ';';
+    const barra = (p) => 'width: ' + p + '%; height: 3px; border-radius: 2px; background: #E0B357;';
+    const apps = [
+      { letra: 'X', nome: 'Xcode', valor: '212%', icone: icone('#9CC3F5'), barra: barra(100) },
+      { letra: 'S', nome: 'swift-frontend', valor: '148%', icone: icone('#A9A6F2'), barra: barra(70) },
+      { letra: 'G', nome: 'Google Chrome', valor: '64%', icone: icone('#E8A07C'), barra: barra(30) },
+      { letra: 'W', nome: 'WindowServer', valor: '22%', icone: icone('#D9D4CA'), barra: barra(10) }
+    ];
+    const linhas = [
+      { r: 'Carga média', v: '8,2 · 7,4 · 6,9' },
+      { r: 'Temperatura', v: '91 °C · máx. 98 °C' },
+      { r: 'Potência da CPU', v: '38 W' },
+      { r: 'Processos', v: '712 · 4.380 threads' },
+      { r: 'Ligado há', v: '3 d 4 h' }
+    ];
+    return { periodos, historico, grupos, apps, linhas };
+  }
+}
+</script>
+</body>
+</html>

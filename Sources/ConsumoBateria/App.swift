@@ -13,7 +13,7 @@ enum Entrada {
         }
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
-        let delegado = AppDelegate()
+        let delegado = AppDelegate(ligarTodosOsModulos: args.contains("--ligar-modulos"))
         app.delegate = delegado
         app.run()
     }
@@ -40,17 +40,58 @@ private struct DetalhesAoVivo: View {
 
 private struct PreferenciasAoVivo: View {
     let monitor: Monitor
+    let monitorModulos: MonitorModulos
+    let ajustesModulos: AjustesModulos
+    let navegacao: NavegacaoPreferencias
 
     var body: some View {
-        JanelaPreferencias(ajustes: .compartilhado, abrirAoIniciar: monitor.abrirAoIniciar,
-                           alternarAbrirAoIniciar: { monitor.alternarAbrirAoIniciar($0) })
+        // Módulo desligado não é lido; a prévia do editor usa os dados de exemplo onde falta leitura.
+        let leituras = monitorModulos.leituras.completando(com: .exemplo)
+        let exemplo = monitorModulos.series.series.isEmpty
+        let series = exemplo ? SeriesModulos.exemplo(agora: leituras.data) : monitorModulos.series
+        PreferenciasComMenu(ajustes: .compartilhado, ajustesModulos: ajustesModulos, navegacao: navegacao,
+                            leituras: leituras, series: series, situacao: monitor.situacao,
+                            abrirAoIniciar: monitor.abrirAoIniciar,
+                            alternarAbrirAoIniciar: { monitor.alternarAbrirAoIniciar($0) })
+    }
+}
+
+private extension LeiturasModulos {
+    /// Mantém o que foi lido e completa o resto com `outro` (prévia das Preferências).
+    func completando(com outro: LeiturasModulos) -> LeiturasModulos {
+        var l = self
+        l.cpu = cpu ?? outro.cpu
+        l.gpu = gpu ?? outro.gpu
+        l.memoria = memoria ?? outro.memoria
+        l.disco = disco ?? outro.disco
+        l.rede = rede ?? outro.rede
+        l.sensores = sensores ?? outro.sensores
+        l.energia = energia ?? outro.energia
+        if l.ligadoDesde == nil { l.ligadoDesde = outro.ligadoDesde }
+        return l
     }
 }
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var monitor: Monitor?
+    private var monitorModulos: MonitorModulos?
     private var barra: ControladorBarra?
+    private var barraModulos: ControladorModulos?
+    private let ajustesModulos: AjustesModulos
+    private let navegacaoPreferencias = NavegacaoPreferencias()
+
+    /// `ligarTodosOsModulos` (--ligar-modulos): para conferir a barra sem mexer no UserDefaults do dono.
+    init(ligarTodosOsModulos: Bool = false) {
+        if ligarTodosOsModulos {
+            let a = AjustesModulos(persistir: false)
+            for m in Modulo.allCases { a.alternar(m, ligado: true) }
+            ajustesModulos = a
+        } else {
+            ajustesModulos = .compartilhado
+        }
+        super.init()
+    }
     private var janelaDetalhes: NSWindow?
     private var janelaPreferencias: NSWindow?
 
@@ -65,13 +106,56 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         barra = ControladorBarra(
             conteudoPainel: { AnyView(RaizTematica { PainelAoVivo(monitor: monitor, acoes: acoes) }) },
             abrirDetalhes: { [weak self] in self?.abrirDetalhes() },
-            abrirPreferencias: { [weak self] in self?.abrirPreferencias() },
-            pegarSituacao: { monitor.situacao })
+            abrirPreferencias: { [weak self] in self?.abrirPreferencias(pagina: .bateria) },
+            pegarSituacao: { monitor.situacao },
+            abrirPreferenciasModulos: { [weak self] in self?.abrirPreferencias(pagina: .modulo(.cpu)) },
+            ajustesModulos: ajustesModulos)
         observar()
+
+        // Os módulos nascem depois da bateria, para o item dela ficar na ponta direita.
+        let modulos = MonitorModulos(ajustes: ajustesModulos) { (monitor.detalhes.entradaSistemaW, monitor.detalhes.adaptadorW) }
+        monitorModulos = modulos
+        barraModulos = ControladorModulos(
+            monitor: modulos, ajustes: ajustesModulos,
+            pegarSituacao: { monitor.situacao },
+            abrirPreferencias: { [weak self] pagina in self?.abrirPreferencias(pagina: pagina) },
+            abrirBateria: { [weak self] in
+                // Dá tempo de o popover dos módulos fechar antes de abrir o da bateria.
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(200))
+                    self?.barra?.abrirPopover()
+                }
+            })
+        barra?.definirVisivel(ajustesModulos.bateriaNaBarra)
+        observarModulos()
     }
 
     func applicationWillTerminate(_ notificacao: Notification) {
         monitor?.salvar()
+        monitorModulos?.gravarRedeAgora()
+    }
+
+    /// Mesma ideia de `observar()`, para os módulos: leitura, séries e ajustes que mudam a barra.
+    private func observarModulos() {
+        guard let monitorModulos else { return }
+        let a = ajustesModulos
+        withObservationTracking {
+            _ = monitorModulos.leituras
+            _ = monitorModulos.series
+            _ = a.modulos
+            _ = a.modoBarra
+            _ = a.intervalo
+            _ = a.bateriaNaBarra
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                guard let self else { return }
+                self.barraModulos?.reconstruirSeNecessario()
+                self.barraModulos?.redesenhar()
+                self.monitorModulos?.reavaliar()
+                self.barra?.definirVisivel(self.ajustesModulos.bateriaNaBarra)
+                self.observarModulos()
+            }
+        }
     }
 
     /// Redesenha o item da barra quando a leitura ou um ajuste que o afeta muda; o rastreio vale uma
@@ -109,11 +193,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func abrirPreferencias() {
-        guard let monitor else { return }
-        mostrar(&janelaPreferencias, titulo: "Preferências", tamanho: NSSize(width: 820, height: 760),
-                minimo: NSSize(width: 680, height: 520)) {
-            AnyView(RaizTematica { PreferenciasAoVivo(monitor: monitor) })
+    private func abrirPreferencias(pagina: PaginaPreferencias = .bateria) {
+        guard let monitor, let monitorModulos else { return }
+        navegacaoPreferencias.pagina = pagina
+        let ajustesModulos = self.ajustesModulos
+        let navegacao = navegacaoPreferencias
+        mostrar(&janelaPreferencias, titulo: "Preferências", tamanho: NSSize(width: 1040, height: 780),
+                minimo: NSSize(width: 860, height: 560)) {
+            AnyView(RaizTematica {
+                PreferenciasAoVivo(monitor: monitor, monitorModulos: monitorModulos,
+                                   ajustesModulos: ajustesModulos, navegacao: navegacao)
+            })
         }
     }
 

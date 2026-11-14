@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Painel do disco</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#F2CC7A}a:hover{color:#FFE2A3}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 400px; height: 1240px; box-sizing: border-box; padding: 18px 16px 14px; background: #13100C; border-radius: 16px; border: 1px solid rgba(255,255,255,0.10); color: #F5F5F5; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 14px;">
+
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <div style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(#F2CC7A, #BD8A33); display: flex; align-items: center; justify-content: center; color: #1F1505; flex-shrink: 0;">
+      <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4zM12 14h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="8" cy="14" r="1.2" fill="currentColor"></circle></svg>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
+      <div style="font-size: 17px; font-weight: 700;">Disco</div>
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255,255,255,0.62);"><span style="width: 7px; height: 7px; border-radius: 50%; background: #5BD27A;"></span>2 volumes · SSD saudável</div>
+    </div>
+    <button aria-label="Preferências do disco" style="width: 32px; height: 32px; border-radius: 16px; border: none; background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center;">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.3" fill="none" stroke="currentColor" stroke-width="1.4"></circle><path d="M8 1.5v1.8M8 12.7v1.8M1.5 8h1.8M12.7 8h1.8M3.4 3.4l1.3 1.3M11.3 11.3l1.3 1.3M3.4 12.6l1.3-1.3M11.3 4.7l1.3-1.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path></svg>
+    </button>
+  </div>
+
+  <sc-for list="{{volumes}}" as="v" hint-placeholder-count="2">
+    <div style="display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 14px; background: rgba(255,255,255,0.06);">
+      <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <span style="font-size: 15px; font-weight: 700;">{{v.nome}}</span>
+        <span style="font-size: 12px; color: rgba(255,255,255,0.62);">{{v.tipo}}</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 6px; font-variant-numeric: tabular-nums;">
+        <span style="{{v.grandeEstilo}}">{{v.pct}}</span>
+        <span style="font-size: 14px; color: rgba(255,255,255,0.7);">{{v.detalhe}}</span>
+      </div>
+      <div style="height: 8px; border-radius: 4px; background: rgba(255,255,255,0.10); display: flex; overflow: hidden;">
+        <span style="{{v.barra}}"></span>
+        <span style="{{v.purgavel}}"></span>
+      </div>
+      <span style="font-size: 12px; color: rgba(255,255,255,0.62);">{{v.rodape}}</span>
+    </div>
+  </sc-for>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+    <div style="display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.06);">
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgba(255,255,255,0.62);"><span style="width: 8px; height: 8px; border-radius: 2px; background: #E0B357;"></span>Lendo</span>
+      <span style="font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;">120 MB/s</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.06);">
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgba(255,255,255,0.62);"><span style="width: 8px; height: 8px; border-radius: 2px; background: rgba(255,255,255,0.5);"></span>Gravando</span>
+      <span style="font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;">8 MB/s</span>
+    </div>
+  </div>
+  <div style="display: flex; flex-direction: column; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.06);">
+    <div style="height: 54px; display: flex; align-items: flex-end; gap: 3px;">
+      <sc-for list="{{leitura}}" as="h" hint-placeholder-count="30">
+        <span style="{{h}}"></span>
+      </sc-for>
+    </div>
+    <div style="height: 1px; background: rgba(255,255,255,0.18);"></div>
+    <div style="height: 34px; display: flex; align-items: flex-start; gap: 3px;">
+      <sc-for list="{{escrita}}" as="h" hint-placeholder-count="30">
+        <span style="{{h}}"></span>
+      </sc-for>
+    </div>
+    <div style="display: flex; justify-content: space-between; font-size: 11px; color: rgba(255,255,255,0.55); padding-top: 4px;"><span>há 10 min</span><span>agora</span></div>
+  </div>
+
+  <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.62); margin-top: 2px;">Saúde do SSD</div>
+  <div style="display: flex; flex-direction: column; padding: 4px 12px; border-radius: 12px; background: rgba(255,255,255,0.06);">
+    <sc-for list="{{saude}}" as="l" hint-placeholder-count="4">
+      <div style="display: flex; justify-content: space-between; padding: 7px 0; font-size: 14px;">
+        <span style="color: rgba(255,255,255,0.68);">{{l.r}}</span>
+        <span style="font-variant-numeric: tabular-nums;">{{l.v}}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 2px;">
+    <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.62);">Quem mais lê e grava</span>
+    <span style="font-size: 12px; color: rgba(255,255,255,0.55);">últimos 10 s</span>
+  </div>
+  <div style="display: flex; flex-direction: column; padding: 4px 12px; border-radius: 12px; background: rgba(255,255,255,0.06);">
+    <sc-for list="{{apps}}" as="a" hint-placeholder-count="3">
+      <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0;">
+        <span style="{{a.icone}}">{{a.letra}}</span>
+        <span style="flex: 1; font-size: 14px;">{{a.nome}}</span>
+        <span style="font-size: 13px; font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.8);">{{a.valor}}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
+    <button style="height: 40px; border-radius: 20px; border: none; background: linear-gradient(#F2CC7A, #BD8A33); color: #1F1505; font-size: 15px; font-weight: 700; box-shadow: 0 2px 10px rgba(224,179,87,0.35);">Abrir Utilitário de Disco</button>
+    <div style="display: flex; justify-content: space-between; font-size: 15px; color: rgba(255,255,255,0.75); padding: 0 6px;"><span>Visão geral</span><span>Sair</span></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":400,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const volumes = [
+      { nome: 'Macintosh HD', tipo: 'SSD interno · APFS', pct: '44%', detalhe: '437 de 994 GB',
+        grandeEstilo: 'font-size: 34px; font-weight: 700; letter-spacing: -0.02em; color: #F2CC7A;',
+        barra: 'width: 44%; background: #E0B357;', purgavel: 'width: 6%; background: rgba(224,179,87,0.35);',
+        rodape: '557 GB livres · 58 GB podem ser liberados pelo macOS' },
+      { nome: 'SSD Externo', tipo: 'USB-C · ExFAT', pct: '71%', detalhe: '1,4 de 2 TB',
+        grandeEstilo: 'font-size: 26px; font-weight: 700; letter-spacing: -0.02em;',
+        barra: 'width: 71%; background: rgba(255,255,255,0.6);', purgavel: 'width: 0%;',
+        rodape: '580 GB livres · Ejetar' }
+    ];
+    const lv = [2, 3, 2, 40, 90, 70, 20, 5, 3, 2, 10, 35, 60, 22, 6, 4, 3, 2, 2, 15, 48, 80, 55, 18, 8, 5, 30, 64, 40, 24];
+    const ev = [1, 1, 2, 10, 20, 8, 3, 1, 1, 1, 4, 30, 50, 12, 3, 2, 1, 1, 1, 6, 14, 22, 9, 4, 2, 1, 6, 12, 9, 5];
+    const leitura = lv.map((v, i) => 'flex: 1; border-radius: 2px 2px 0 0; height: ' + Math.max(1, Math.round(v * 0.54)) + 'px; background: #E0B357; opacity: ' + (i >= 26 ? 1 : 0.65) + ';');
+    const escrita = ev.map((v) => 'flex: 1; border-radius: 0 0 2px 2px; height: ' + Math.max(1, Math.round(v * 0.6)) + 'px; background: rgba(255,255,255,0.5);');
+    const saude = [
+      { r: 'Vida útil usada', v: '2%' },
+      { r: 'Já gravado', v: '38 TB' },
+      { r: 'Temperatura', v: '45 °C' },
+      { r: 'Erros', v: 'nenhum' }
+    ];
+    const icone = (cor) => 'width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #1F1505; background: ' + cor + ';';
+    const apps = [
+      { letra: 'S', nome: 'Spotlight', valor: '↓ 84 MB/s · ↑ 1 MB/s', icone: icone('#D9D4CA') },
+      { letra: 'X', nome: 'Xcode', valor: '↓ 30 MB/s · ↑ 6 MB/s', icone: icone('#9CC3F5') },
+      { letra: 'T', nome: 'Time Machine', valor: '↓ 6 MB/s · ↑ 0', icone: icone('#A9A6F2') }
+    ];
+    return { volumes, leitura, escrita, saude, apps };
+  }
+}
+</script>
+</body>
+</html>

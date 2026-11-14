@@ -188,7 +188,10 @@ final class ControladorBarra: NSObject {
     private let pegarSituacao: () -> Situacao?
     private let abrirDetalhes: () -> Void
     private let abrirPreferencias: () -> Void
+    private let abrirPreferenciasModulos: (() -> Void)?
+    private let ajustesModulos: AjustesModulos
     private var observacaoAparencia: NSKeyValueObservation?
+    private var ultimaEscura: Bool?
     /// Situação de exemplo por estado ("Ver na barra"), para não recalcular a série a cada redesenho.
     private var exemplos: [EstadoBarra: Situacao] = [:]
 
@@ -199,8 +202,12 @@ final class ControladorBarra: NSObject {
     init(conteudoPainel: @escaping () -> AnyView,
          abrirDetalhes: @escaping () -> Void,
          abrirPreferencias: @escaping () -> Void,
-         pegarSituacao: @escaping () -> Situacao?) {
+         pegarSituacao: @escaping () -> Situacao?,
+         abrirPreferenciasModulos: (() -> Void)? = nil,
+         ajustesModulos: AjustesModulos = .compartilhado) {
+        self.ajustesModulos = ajustesModulos
         self.pegarSituacao = pegarSituacao
+        self.abrirPreferenciasModulos = abrirPreferenciasModulos
         self.abrirDetalhes = abrirDetalhes
         self.abrirPreferencias = abrirPreferencias
         super.init()
@@ -212,8 +219,13 @@ final class ControladorBarra: NSObject {
             botao.action = #selector(clicou(_:))
             botao.sendAction(on: [.leftMouseUp, .rightMouseUp])
             botao.imagePosition = .imageOnly
+            ultimaEscura = barraEscura
             observacaoAparencia = botao.observe(\.effectiveAppearance) { [weak self] _, _ in
-                Task { @MainActor [weak self] in self?.redesenhar() }
+                Task { @MainActor [weak self] in
+                    guard let self, self.barraEscura != self.ultimaEscura else { return }
+                    self.ultimaEscura = self.barraEscura
+                    self.redesenhar()
+                }
             }
         }
         redesenhar()
@@ -244,6 +256,17 @@ final class ControladorBarra: NSObject {
         botao.image = RenderizadorBarra.imagem(
             situacao: situacao, config: ajustes.config(situacao.estado), colorir: ajustes.colorirBarra,
             casas: ajustes.casasDecimais, sentido: ajustes.sentido, escura: barraEscura)
+    }
+
+    /// Esconde ou mostra o item da bateria (Preferências > Módulos).
+    func definirVisivel(_ visivel: Bool) {
+        if statusItem.isVisible != visivel { statusItem.isVisible = visivel }
+    }
+
+    /// Abre o popover da bateria se estiver fechado (usado pela Visão geral dos módulos).
+    func abrirPopover() {
+        guard !popover.isShown else { return }
+        alternarPopover()
     }
 
     // MARK: Cliques
@@ -294,6 +317,24 @@ final class ControladorBarra: NSObject {
             menu.addItem(pai)
         }
         menu.addItem(.separator())
+        let modulos = ajustesModulos
+        let submodulos = NSMenu()
+        for m in Modulo.allCases {
+            let item = NSMenuItem(title: m.titulo, action: #selector(alternarModulo(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = m.rawValue
+            item.state = modulos.ajuste(m).ligado ? .on : .off
+            submodulos.addItem(item)
+        }
+        if abrirPreferenciasModulos != nil {
+            submodulos.addItem(.separator())
+            let prefs = NSMenuItem(title: "Preferências dos módulos…", action: #selector(chamarPreferenciasModulos), keyEquivalent: "")
+            prefs.target = self
+            submodulos.addItem(prefs)
+        }
+        let paiModulos = NSMenuItem(title: "Módulos do sistema", action: nil, keyEquivalent: "")
+        paiModulos.submenu = submodulos
+        menu.addItem(paiModulos)
         let detalhes = NSMenuItem(title: "Mais informações", action: #selector(chamarDetalhes), keyEquivalent: "")
         detalhes.target = self
         menu.addItem(detalhes)
@@ -324,6 +365,13 @@ final class ControladorBarra: NSObject {
         redesenhar()
     }
 
+    @objc private func alternarModulo(_ item: NSMenuItem) {
+        guard let bruto = item.representedObject as? String, let m = Modulo(rawValue: bruto) else { return }
+        let ajustes = ajustesModulos
+        ajustes.alternar(m, ligado: !ajustes.ajuste(m).ligado)
+    }
+
+    @objc private func chamarPreferenciasModulos() { abrirPreferenciasModulos?() }
     @objc private func chamarDetalhes() { abrirDetalhes() }
     @objc private func chamarPreferencias() { abrirPreferencias() }
     @objc private func sair() { NSApp.terminate(nil) }

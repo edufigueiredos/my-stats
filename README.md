@@ -38,6 +38,17 @@ Fica de fora: processos de root e de outros usuários (leitura negada sem privil
 - Exportar CSV em Mais informações.
 - O antigo `amostras.json` não é mais gravado: se existir ao iniciar, é lido uma vez para a média continuar e apagado. As amostras de 5 s ficam só em memória (até 1 h).
 
+## Módulos do sistema
+
+CPU, GPU, Memória, Disco, Rede e Sensores, cada um com item na barra e painel próprio. Vêm desligados.
+
+- Como ligar: Preferências > Módulos, ou clique direito na bateria > Módulos do sistema.
+- Barra: um item por módulo (padrão), um item só (abre a Visão geral) ou grupos. Clique abre o painel; clique direito abre o menu rápido.
+- Intervalo de leitura: 1, 2 (padrão) ou 5 s. Só os módulos ligados são lidos; sem nenhum ligado e sem painel aberto não há leitura nenhuma.
+- "Quem mais usa" (por processo) só é medido enquanto o painel está aberto. A rede por processo usa o nettop e some se ele falhar.
+- Sem root e sem `powermetrics`: o que o sistema não entrega assim aparece como "—" (por exemplo, nome da rede Wi-Fi sem permissão de localização, ou um sensor que este Mac não expõe).
+- Para conferir a barra sem mexer nas suas preferências: `.build/debug/ConsumoBateria --ligar-modulos` liga todos só em memória.
+
 ## Compilar e instalar
 ```bash
 ./build.sh            # gera build/ConsumoBateria.app (assinatura ad hoc)

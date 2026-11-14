@@ -142,6 +142,8 @@ enum Foto {
                "barra-cor-clara", em: url)
 
         checarConfigsAntigas()
+        print(AjustesModulos.checarCompatibilidade() ? "configs de módulos: ok" : "configs de módulos: ERRO")
+        fotosModulos(em: url)
 
         // Um PNG por tema (o vidro de verdade não sai fora da janela: usa o substituto chapado).
         PreviaVidro.aproximado = true
@@ -311,6 +313,301 @@ private struct GradeNovidades: View {
         .foregroundStyle(.white.opacity(0.7))
         .padding(20)
         .background(Color(hex: "#13100C"))
+        .environment(\.colorScheme, .dark)
+    }
+}
+
+
+// MARK: - Módulos do sistema
+
+private extension Foto {
+    /// Barra, formatos, agrupamento, faixas, painéis e Preferências dos módulos (docs/desenho/modulos/), no tema Gold.
+    static func fotosModulos(em url: URL) {
+        let leituras = LeiturasModulos.exemplo
+        let series = SeriesModulos.exemplo(agora: leituras.data)
+        let acoes = AcoesModulo.nenhuma
+
+        png(RaizTematica(temaFixo: .gold) { QuadroBarraModulos(leituras: leituras, series: series) }, "modulos-barra", em: url)
+        png(RaizTematica(temaFixo: .gold) { QuadroFormatosModulos(leituras: leituras, series: series) }, "modulos-formatos", em: url)
+        png(RaizTematica(temaFixo: .gold) { QuadroAgruparModulos(leituras: leituras) }, "modulos-agrupar", em: url)
+        png(RaizTematica(temaFixo: .gold) { QuadroFaixasModulos(leituras: leituras) }, "modulos-faixas", em: url)
+
+        // Painéis: sem ações e sem limite de altura.
+        png(RaizTematica(temaFixo: .gold) {
+            PainelGeral(leituras: leituras, series: series, situacao: .exemplo(.parado), acoes: acoes)
+        }, "painel-geral", em: url)
+        png(RaizTematica(temaFixo: .gold) { PainelCPU(leituras: leituras, series: series, acoes: acoes) }, "painel-cpu", em: url)
+        png(RaizTematica(temaFixo: .gold) { PainelGPU(leituras: leituras, series: series, acoes: acoes) }, "painel-gpu", em: url)
+        png(RaizTematica(temaFixo: .gold) { PainelMemoria(leituras: leituras, series: series, acoes: acoes) }, "painel-memoria", em: url)
+        png(RaizTematica(temaFixo: .gold) { PainelDisco(leituras: leituras, series: series, acoes: acoes) }, "painel-disco", em: url)
+        png(RaizTematica(temaFixo: .gold) { PainelRede(leituras: leituras, series: series, acoes: acoes) }, "painel-rede", em: url)
+        png(RaizTematica(temaFixo: .gold) {
+            PainelSensores(leituras: leituras, series: series, acoes: acoes,
+                           avisoTitulo: "Avisar acima de 95 °C na CPU", avisoDica: "Por mais de 2 min seguidos. Muda nas Preferências.")
+        }, "painel-sensores", em: url)
+
+        // Altura do popover de um painel novo com limite de tela, como o teste do painel da bateria.
+        let limite: CGFloat = 600
+        let hc = NSHostingController(rootView: RaizTematica(temaFixo: .gold) {
+            PainelCPU(leituras: leituras, series: series, acoes: acoes, alturaMaxima: limite)
+        })
+        hc.view.frame = NSRect(x: 0, y: 0, width: 400, height: 400)
+        for _ in 0..<5 {
+            hc.view.layoutSubtreeIfNeeded()
+            RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+        }
+        print("painel cpu com tela de \(Int(limite)) pt: \(Int(hc.view.fittingSize.height)) pt de altura")
+
+        // Preferências com o menu lateral: todos os módulos ligados, a peça "Uso %" da linha de baixo selecionada.
+        let ajustesBateria = Ajustes(persistir: false)
+        ajustesBateria.aplicar(.duasLinhas)
+        let todos = AjustesModulos(persistir: false)
+        for m in Modulo.allCases { todos.alternar(m, ligado: true) }
+        todos.atualizarConfig(.cpu) { c in
+            c.pecas = [ItemPecaModulo(.rotulo)]
+            c.pecasBaixo = [ItemPecaModulo(.valor, tamanho: 13, negrito: true, porFaixa: true), ItemPecaModulo(.grafico)]
+        }
+        png(RaizTematica(temaFixo: .gold) {
+            PreferenciasComMenu(ajustes: ajustesBateria, ajustesModulos: todos, navegacao: NavegacaoPreferencias(pagina: .modulo(.cpu)),
+                                leituras: leituras, series: series, situacao: .exemplo(.parado), abrirAoIniciar: true,
+                                alternarAbrirAoIniciar: { _ in }, paraFoto: true,
+                                pecaSelecionadaInicial: (.baixo, .valor))
+        }, "preferencias-modulos", em: url)
+        png(RaizTematica(temaFixo: .gold) {
+            PreferenciasComMenu(ajustes: ajustesBateria, ajustesModulos: todos, navegacao: NavegacaoPreferencias(pagina: .modulo(.sensores)),
+                                leituras: leituras, series: series, situacao: .exemplo(.parado), abrirAoIniciar: true,
+                                alternarAbrirAoIniciar: { _ in }, paraFoto: true,
+                                pecaSelecionadaInicial: (.cima, .temperatura))
+        }, "preferencias-modulos-sensores", em: url)
+    }
+}
+
+private let corBarraModulos = Color(hex: "#2B1F38")
+
+private func rotuloQuadro(_ s: String) -> some View {
+    Text(s)
+        .font(.system(size: 12, weight: .semibold))
+        .foregroundStyle(Color(hex: "#F2CC7A"))
+        .textCase(.uppercase)
+        .tracking(0.9)
+}
+
+private func itemModulo(_ m: Modulo, _ config: ConfigModulo, _ l: LeiturasModulos, _ s: SeriesModulos, escala: CGFloat,
+                        corBase: Color = .white) -> some View {
+    VistaItemModulo(modulo: m, config: config, leituras: l, serie: serieDoItem(m, series: s), corBase: corBase, escala: escala)
+}
+
+/// Faixa "Sua barra de hoje" de Main.dc.html: os seis módulos nos formatos padrão e a bateria por último, em escala 2.
+private struct QuadroBarraModulos: View {
+    let leituras: LeiturasModulos
+    let series: SeriesModulos
+
+    private var bateria: some View {
+        let estado = EstadoBarra.parado
+        return VistaItemBarra(situacao: .exemplo(estado), config: FormatoBarra.duasLinhas.config(para: estado, corHex: "#FFFFFF"),
+                              colorir: false, casas: 1, sentido: .sinais, escala: 2, corBase: .white)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            rotuloQuadro("Sua barra de hoje, do nosso jeito")
+            HStack(spacing: 30) {
+                Spacer(minLength: 0)
+                ForEach(AjustesModulos.ordemPadrao) { m in
+                    itemModulo(m, FormatoModulo.padrao(m).config(para: m), leituras, series, escala: 2)
+                }
+                bateria
+            }
+            .padding(.horizontal, 28)
+            .frame(width: 1184, height: 64)
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(
+                LinearGradient(colors: [Color(hex: "#4A2A63"), Color(hex: "#5B3376"), Color(hex: "#4A2A63")],
+                               startPoint: .leading, endPoint: .trailing)))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.white.opacity(0.10)))
+            Text("Igual ao seu iStat: rótulo em cima, valor embaixo. A diferença é que cada peça é editável (tamanho, cor, casas, faixa de cor) e o ponto da rede muda de cor com a latência.")
+                .font(.system(size: 13)).foregroundStyle(.white.opacity(0.62))
+        }
+        .padding(24)
+        .background(Color(hex: "#0E0C0A"))
+        .environment(\.colorScheme, .dark)
+    }
+}
+
+/// Grade módulos × formatos prontos de Main.dc.html.
+private struct QuadroFormatosModulos: View {
+    let leituras: LeiturasModulos
+    let series: SeriesModulos
+
+    private let formatos: [FormatoModulo] = [.rotuloValor, .graficoValor, .iconeValor, .anelValor, .compacto]
+    private let modulos: [Modulo] = [.cpu, .gpu, .memoria, .disco, .rede, .sensores]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                rotuloQuadro("Formatos prontos por módulo")
+                Spacer()
+                Text("Ponto de partida; depois o editor de peças muda qualquer coisa")
+                    .font(.system(size: 13)).foregroundStyle(.white.opacity(0.62))
+            }
+            HStack(spacing: 8) {
+                Color.clear.frame(width: 150, height: 1)
+                ForEach(formatos, id: \.self) { f in
+                    Text(f.titulo).font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.75))
+                        .frame(width: 198, alignment: .leading)
+                }
+            }
+            ForEach(modulos) { m in
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(m.titulo).font(.system(size: 15, weight: .bold))
+                        Text(m.dica).font(.system(size: 12)).foregroundStyle(.white.opacity(0.62))
+                    }
+                    .frame(width: 150, alignment: .leading)
+                    ForEach(formatos, id: \.self) { f in
+                        itemModulo(m, f.config(para: m), leituras, series, escala: 1.5)
+                            .frame(width: 198, height: 56)
+                            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(corBarraModulos))
+                    }
+                }
+            }
+        }
+        .padding(24)
+        .background(Color(hex: "#0E0C0A"))
+        .foregroundStyle(.white)
+        .environment(\.colorScheme, .dark)
+    }
+}
+
+/// Os três cartões "Juntos ou separados": um item por módulo, um item só e grupos.
+private struct QuadroAgruparModulos: View {
+    let leituras: LeiturasModulos
+
+    private func umaLinha(_ m: Modulo) -> ConfigModulo {
+        let faixa = FaixaModulo.padrao(m)
+        if m == .rede { return ConfigModulo(pecas: [ItemPecaModulo(.ponto), ItemPecaModulo(.latencia)], faixa: faixa) }
+        return ConfigModulo(pecas: [ItemPecaModulo(.rotulo), ItemPecaModulo(.valor)], faixa: faixa)
+    }
+
+    private func solto(_ m: Modulo) -> some View {
+        itemModulo(m, umaLinha(m), leituras, SeriesModulos(), escala: 1.2)
+            .padding(.horizontal, 8)
+    }
+
+    private func juntos(_ ms: [Modulo]) -> some View {
+        VistaGrupoModulos(itens: ms.map { ($0, umaLinha($0)) }, leituras: leituras, series: SeriesModulos(),
+                          corBase: .white, escala: 1.2)
+            .padding(.horizontal, 8)
+            .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color.white.opacity(0.10)))
+    }
+
+    private func cartao<C: View>(_ titulo: String, _ texto: String, padrao: Bool, @ViewBuilder _ itens: () -> C) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(titulo).font(.system(size: 15, weight: .bold))
+                    Text(texto).font(.system(size: 13)).foregroundStyle(.white.opacity(0.62))
+                }
+                Spacer(minLength: 12)
+                if padrao {
+                    Text("Padrão").font(.system(size: 12, weight: .bold)).foregroundStyle(Color(hex: "#1F1505"))
+                        .padding(.horizontal, 10).padding(.vertical, 4)
+                        .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(LinearGradient(colors: [Color(hex: "#F2CC7A"), Color(hex: "#BD8A33")], startPoint: .top, endPoint: .bottom)))
+                }
+            }
+            HStack(spacing: 6) {
+                Spacer(minLength: 0)
+                itens()
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 38)
+            .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(corBarraModulos))
+        }
+        .padding(.horizontal, 16).padding(.vertical, 14)
+        .frame(width: 600)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.white.opacity(0.06)))
+        .overlay {
+            if padrao {
+                RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color(hex: "#F2CC7A").opacity(0.55), lineWidth: 1.5)
+            }
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            rotuloQuadro("Juntos ou separados")
+            cartao("Um item por módulo", "Cada um abre o próprio painel. Como o seu iStat hoje.", padrao: true) {
+                ForEach([Modulo.cpu, .gpu, .memoria, .rede]) { m in solto(m) }
+            }
+            cartao("Um item só", "Menos espaço na barra; o clique abre a Visão geral.", padrao: false) {
+                VistaItemUnico(modulos: [.cpu, .gpu, .memoria, .rede, .sensores], leituras: leituras, corBase: .white, escala: 1.2)
+                    .padding(.horizontal, 8)
+                    .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color.white.opacity(0.10)))
+            }
+            cartao("Grupos", "Você escolhe quem vai junto, por exemplo CPU com GPU.", padrao: false) {
+                juntos([.cpu, .gpu])
+                juntos([.memoria, .disco])
+                solto(.rede)
+            }
+        }
+        .padding(24)
+        .background(Color(hex: "#0E0C0A"))
+        .foregroundStyle(.white)
+        .environment(\.colorScheme, .dark)
+    }
+}
+
+/// "Cor por faixa": CPU em 35/83/97, rede em 6 ms/84 ms/sem rede e temperatura em 58/84/99.
+private struct QuadroFaixasModulos: View {
+    let leituras: LeiturasModulos
+
+    private func comCPU(_ v: Double) -> LeiturasModulos {
+        var l = leituras
+        l.cpu?.uso = v
+        return l
+    }
+
+    private func comRede(ms: Double?, conectado: Bool = true) -> LeiturasModulos {
+        var l = leituras
+        l.rede?.latenciaMs = ms
+        l.rede?.conectado = conectado
+        return l
+    }
+
+    private func comTemperatura(_ c: Double) -> LeiturasModulos {
+        var l = leituras
+        l.sensores?.cpuC = c
+        return l
+    }
+
+    private func config(_ m: Modulo, _ pecas: [PecaModulo]) -> ConfigModulo {
+        ConfigModulo(pecas: pecas.map { ItemPecaModulo($0) }, corPorFaixa: true, faixa: FaixaModulo.padrao(m))
+    }
+
+    private func linha(_ rotulo: String, _ m: Modulo, _ pecas: [PecaModulo], _ casos: [LeiturasModulos]) -> some View {
+        HStack(spacing: 12) {
+            Text(rotulo).font(.system(size: 13)).foregroundStyle(.white.opacity(0.75)).frame(width: 150, alignment: .leading)
+            ForEach(Array(casos.enumerated()), id: \.offset) { _, l in
+                itemModulo(m, config(m, pecas), l, SeriesModulos(), escala: 1.4)
+                    .frame(width: 150, height: 44)
+                    .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(corBarraModulos))
+            }
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            rotuloQuadro("Cor por faixa (opcional)")
+            Text("Barra monocromática por padrão. Ligando as faixas, só o valor muda de cor, e também de peso, para não depender só da cor.")
+                .font(.system(size: 13)).foregroundStyle(.white.opacity(0.66)).frame(width: 640, alignment: .leading)
+            linha("CPU: até 60 · 60–90 · acima", .cpu, [.valor], [comCPU(35), comCPU(83), comCPU(97)])
+            linha("Rede: latência", .rede, [.ponto, .latencia],
+                  [comRede(ms: 6), comRede(ms: 84), comRede(ms: nil, conectado: false)])
+            linha("Temperatura", .sensores, [.temperatura], [comTemperatura(58), comTemperatura(84), comTemperatura(99)])
+        }
+        .padding(24)
+        .background(Color(hex: "#0E0C0A"))
+        .foregroundStyle(.white)
         .environment(\.colorScheme, .dark)
     }
 }
