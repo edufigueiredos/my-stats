@@ -38,6 +38,18 @@ enum Foto {
         png(RaizTematica(temaFixo: .gold) {
             PainelBateria(situacao: .exemploCarregando, ajustes: ajustes, acoes: semAcoes)
         }, "painel-carregando", em: url)
+        // Altura do popover ao vivo (com limite de tela): o painel não pode encolher e cortar o conteúdo.
+        for limite: CGFloat in [1000, 600] {
+            let hc = NSHostingController(rootView: RaizTematica(temaFixo: .gold) {
+                PainelBateria(situacao: .exemploCarregando, ajustes: ajustes, acoes: semAcoes, alturaMaxima: limite)
+            })
+            hc.view.frame = NSRect(x: 0, y: 0, width: 400, height: 400)
+            for _ in 0..<5 {
+                hc.view.layoutSubtreeIfNeeded()
+                RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+            }
+            print("popover com tela de \(Int(limite)) pt: \(Int(hc.view.fittingSize.height)) pt de altura")
+        }
         // Painel com a escolha "Carga" no gráfico e a seção Painel das Preferências.
         let ajustesCarga = Ajustes(persistir: false)
         ajustesCarga.modoGrafico = .carga

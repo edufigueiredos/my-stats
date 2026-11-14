@@ -9,7 +9,7 @@ struct Aviso: Codable, Sendable, Equatable {
 
 /// Seções do painel da barra de menus (o cabeçalho é fixo e fica fora da lista).
 enum SecaoPainel: String, CaseIterable, Codable, Sendable, Identifiable {
-    case ritmoEAnel, blocos, grafico, quemMaisGasta, alimentacao, bateria, saude, modoEnergia, atalhos
+    case ritmoEAnel, blocos, grafico, quemMaisGasta, alimentacao, bateria, saude, modoEnergia, usb, atalhos
 
     var id: String { rawValue }
 
@@ -23,6 +23,7 @@ enum SecaoPainel: String, CaseIterable, Codable, Sendable, Identifiable {
         case .bateria: return "Bateria"
         case .saude: return "Saúde"
         case .modoEnergia: return "Modo de energia"
+        case .usb: return "USB"
         case .atalhos: return "Atalhos"
         }
     }
@@ -43,8 +44,8 @@ struct ItemSecaoPainel: Codable, Sendable, Equatable, Identifiable {
         var ligada: Bool?
     }
 
-    /// Lê a lista gravada: ignora seção que o app não conhece mais, repetida, e acrescenta no fim
-    /// (ligada) a que a config antiga não tinha. Sem dados, a ordem padrão.
+    /// Lê a lista gravada: ignora seção que o app não conhece mais, repetida, e acrescenta (ligada) a que a config antiga
+    /// não tinha, no lugar padrão. Sem dados, a ordem padrão.
     static func decodificar(_ dados: Data?) -> [ItemSecaoPainel] {
         guard let dados, let crus = try? JSONDecoder().decode([Cru].self, from: dados) else { return padrao }
         var lista: [ItemSecaoPainel] = []
@@ -52,8 +53,16 @@ struct ItemSecaoPainel: Codable, Sendable, Equatable, Identifiable {
             guard let s = SecaoPainel(rawValue: c.secao), !lista.contains(where: { $0.secao == s }) else { continue }
             lista.append(ItemSecaoPainel(secao: s, ligada: c.ligada ?? true))
         }
-        for s in SecaoPainel.allCases where !lista.contains(where: { $0.secao == s }) {
-            lista.append(ItemSecaoPainel(secao: s, ligada: true))
+        // A seção nova entra no lugar padrão: antes da próxima da ordem padrão que a config já tem; senão no fim.
+        let todas = SecaoPainel.allCases
+        for (i, s) in todas.enumerated() where !lista.contains(where: { $0.secao == s }) {
+            let novo = ItemSecaoPainel(secao: s, ligada: true)
+            if let seguinte = todas[(i + 1)...].first(where: { t in lista.contains(where: { $0.secao == t }) }),
+               let j = lista.firstIndex(where: { $0.secao == seguinte }) {
+                lista.insert(novo, at: j)
+            } else {
+                lista.append(novo)
+            }
         }
         return lista
     }

@@ -708,10 +708,31 @@ struct DetalhesEnergia: Sendable, Equatable {
     var modoEnergia: ModoEnergia?
     var modoEnergiaBateria: ModoEnergia?
     var modoEnergiaTomada: ModoEnergia?
+    /// `pmset -g cap` lista highpowermode (lido uma vez).
+    var altoDesempenhoDisponivel: Bool = false
+    /// Energia saindo pelas portas USB, uma entrada por porta com algo ligado.
+    var portasUSB: [PortaUSB] = []
+    /// Nomes dos aparelhos USB com dados (sem hubs internos nem duplicados).
+    var aparelhosUSB: [String] = []
 
     static let vazio = DetalhesEnergia(
         temperaturaC: nil, ciclos: nil, capacidadeFabricaMah: nil, adaptadorW: nil,
         adaptadorNome: nil, entradaSistemaW: nil, cargaOtimizada: false, poucaEnergia: false)
+}
+
+/// Uma porta USB-C com algo ligado, lida de PowerOutDetails (AppleSmartBattery).
+struct PortaUSB: Sendable, Equatable, Identifiable {
+    var numero: Int
+    var watts: Double
+    var tensaoV: Double?
+    var correnteA: Double?
+    /// PDPowermW: o máximo que o Mac reparte entre as portas, em W.
+    var maximoCombinadoW: Double?
+    /// true com transporte de dados (USB2/USB3/DisplayPort...); false só com energia (CC).
+    var comDados: Bool
+
+    var id: Int { numero }
+    var nome: String { "USB-C \(numero)" }
 }
 
 /// Modo de energia do macOS (pmset powermode: 0, 1, 2).
@@ -858,7 +879,9 @@ extension Situacao {
             temperaturaC: 27, ciclos: 37, capacidadeFabricaMah: 6000, adaptadorW: nil, adaptadorNome: nil,
             entradaSistemaW: nil, cargaOtimizada: false, poucaEnergia: true,
             condicao: "Normal", saudeSistemaPercentual: 100, ciclosProjeto: 1000,
-            modoEnergia: .poucaEnergia, modoEnergiaBateria: .poucaEnergia, modoEnergiaTomada: .automatico)
+            modoEnergia: .poucaEnergia, modoEnergiaBateria: .poucaEnergia, modoEnergiaTomada: .automatico,
+            altoDesempenhoDisponivel: true,
+            portasUSB: [PortaUSB(numero: 3, watts: 6.5, tensaoV: 5.0, correnteA: 1.25, maximoCombinadoW: 15, comDados: false)])
         return Situacao(leitura: leitura, estado: .descarregando, ritmoMedio: -11.3, ritmoAgora: -15.4,
                         ritmoUltimaHora: -10.8, minutosAteFim: 286, minutosAte80: nil,
                         detalhes: detalhes, apps: apps, serie: serie)
@@ -877,7 +900,11 @@ extension Situacao {
             temperaturaC: 31, ciclos: 37, capacidadeFabricaMah: 10100, adaptadorW: 96,
             adaptadorNome: "Carregador USB-C de 96 W", entradaSistemaW: 64, cargaOtimizada: true, poucaEnergia: false,
             condicao: "Normal", saudeSistemaPercentual: 100, ciclosProjeto: 1000,
-            modoEnergia: .automatico, modoEnergiaBateria: .poucaEnergia, modoEnergiaTomada: .automatico)
+            modoEnergia: .automatico, modoEnergiaBateria: .poucaEnergia, modoEnergiaTomada: .automatico,
+            altoDesempenhoDisponivel: true,
+            portasUSB: [PortaUSB(numero: 1, watts: 4.5, tensaoV: 9.0, correnteA: 0.5, maximoCombinadoW: 15, comDados: true),
+                        PortaUSB(numero: 3, watts: 6.5, tensaoV: 5.0, correnteA: 1.25, maximoCombinadoW: 15, comDados: false)],
+            aparelhosUSB: ["Teclado Magic", "SSD Externo"])
         let apps = [
             ConsumoApp(id: "chrome", nome: "Google Chrome", watts: 4.2, fracao: 1),
             ConsumoApp(id: "claude", nome: "Claude", watts: 2.6, fracao: 2.6 / 4.2),

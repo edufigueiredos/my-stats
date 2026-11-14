@@ -57,10 +57,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notificacao: Notification) {
         let monitor = Monitor()
         self.monitor = monitor
-        let acoes = AcoesPainel(
+        var acoes = AcoesPainel(
             maisInformacoes: { [weak self] in self?.abrirDetalhes() },
             preferencias: { [weak self] in self?.abrirPreferencias() },
             sair: { NSApp.terminate(nil) })
+        acoes.recarregar = { monitor.atualizar() }
         barra = ControladorBarra(
             conteudoPainel: { AnyView(RaizTematica { PainelAoVivo(monitor: monitor, acoes: acoes) }) },
             abrirDetalhes: { [weak self] in self?.abrirDetalhes() },

@@ -5,6 +5,8 @@ import Charts
 
 /// O que os botões do rodapé fazem; quem hospeda o painel decide.
 struct AcoesPainel {
+    /// Relê as leituras agora (depois de trocar o modo de energia).
+    var recarregar: () -> Void = {}
     var maisInformacoes: () -> Void
     var preferencias: () -> Void
     var sair: () -> Void
@@ -47,6 +49,7 @@ enum PeriodoGrafico: String, CaseIterable, Identifiable {
 
 struct PainelBateria: View {
     @Environment(\.estilo) private var estilo
+    private var controleModo: ControleModoEnergia { .compartilhado }
 
     let situacao: Situacao?
     let ajustes: Ajustes
@@ -54,6 +57,8 @@ struct PainelBateria: View {
     /// Altura máxima do painel (ao vivo, a área visível da tela); nil no modo foto, sem rolagem.
     let alturaMaxima: CGFloat?
     @State private var periodo: PeriodoGrafico
+    /// Altura medida do conteúdo; o popover se ajusta a ela até o limite da tela.
+    @State private var alturaConteudo: CGFloat = 0
 
     init(situacao: Situacao?, ajustes: Ajustes, acoes: AcoesPainel, periodoInicial: PeriodoGrafico = .umaHora, alturaMaxima: CGFloat? = nil) {
         self.alturaMaxima = alturaMaxima
@@ -68,12 +73,17 @@ struct PainelBateria: View {
     var body: some View {
         VStack(spacing: 14) {
             if let limite = alturaMaxima {
-                // Cabe inteiro: sem rolagem. Não cabe: rola o conteúdo e o rodapé fica sempre visível.
-                ViewThatFits(in: .vertical) {
+                // Altura fixa = conteúdo medido, até o limite da tela; passou disso, rola e o rodapé fica visível.
+                // (Com ViewThatFits, o ScrollView tinha altura ideal quase zero e o popover encolhia, cortando tudo.)
+                let teto = max(limite - 200, 200)
+                ScrollView(.vertical, showsIndicators: alturaConteudo > teto) {
                     conteudo
-                    ScrollView(.vertical, showsIndicators: false) { conteudo }
+                        .background(GeometryReader { g in
+                            Color.clear.preference(key: AlturaConteudoPainel.self, value: g.size.height)
+                        })
                 }
-                .frame(maxHeight: max(limite - 80, 200))
+                .onPreferenceChange(AlturaConteudoPainel.self) { alturaConteudo = $0 }
+                .frame(height: min(alturaConteudo > 0 ? alturaConteudo : teto, teto))
             } else {
                 conteudo
             }
@@ -122,6 +132,8 @@ struct PainelBateria: View {
             cartaoSaude(s)
         case .modoEnergia:
             cartaoModoEnergia(s)
+        case .usb:
+            cartaoUSB(s)
         case .atalhos:
             atalhos
         }
@@ -646,26 +658,50 @@ struct PainelBateria: View {
         .accessibilityLabel("Saúde da bateria \(Formato.percentual(saude))")
     }
 
-    private func cartaoModoEnergia(_ s: Situacao) -> some View {
-        let d = s.detalhes
-        let atual = d.modoEnergia?.titulo ?? (d.poucaEnergia ? ModoEnergia.poucaEnergia.titulo : ModoEnergia.automatico.titulo)
-        let porFonte = [d.modoEnergiaBateria.map { "Na bateria: " + $0.titulo },
-                        d.modoEnergiaTomada.map { "Na tomada: " + $0.titulo }].compactMap { $0 }
+    private func cartaoUSB(_ s: Situacao) -> some View {
+        let portas = s.detalhes.portasUSB
+        let aparelhos = s.detalhes.aparelhosUSB
         return VStack(alignment: .leading, spacing: 8) {
-            Text("Modo de energia")
-                .font(.system(size: 11, weight: .semibold))
-                .tracking(0.9)
-                .textCase(.uppercase)
-                .foregroundStyle(estilo.destaque)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(atual).font(.system(size: 17, weight: .semibold))
-                if !porFonte.isEmpty {
-                    Text(porFonte.joined(separator: " · "))
-                        .font(.system(size: 13))
-                        .foregroundStyle(secundario)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+            tituloCartao("USB")
+            if portas.isEmpty && aparelhos.isEmpty {
+                Text("Nada ligado nas portas USB").font(.system(size: 14)).foregroundStyle(secundario)
+            }
+            VStack(spacing: 0) {
+                ForEach(Array(portas.enumerated()), id: \.element.id) { i, p in
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 8) {
+                            Text(p.nome).foregroundStyle(Color.primary.opacity(0.68))
+                            Spacer(minLength: 4)
+                            Text(Formato.watts(p.watts)).monospacedDigit()
+                        }
+                        .font(.system(size: 14))
+                        Text(detalhePortaUSB(p)).font(.system(size: 12)).foregroundStyle(secundario)
+                    }
+                    .padding(.vertical, 6)
+                    .overlay(alignment: .bottom) {
+                        if i < portas.count - 1 { Rectangle().fill(Color.primary.opacity(0.07)).frame(height: 1) }
+                    }
                 }
+                if portas.count > 1 {
+                    let total = portas.reduce(0) { $0 + $1.watts }
+                    Rectangle().fill(Color.primary.opacity(0.07)).frame(height: 1)
+                    HStack(spacing: 8) {
+                        Text("Total").foregroundStyle(Color.primary.opacity(0.68))
+                        Spacer(minLength: 4)
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text(Formato.watts(total)).monospacedDigit()
+                            if let max = portas.compactMap(\.maximoCombinadoW).first {
+                                Text("de \(Formato.numero(max, casas: 0)) W").font(.system(size: 12)).foregroundStyle(secundario)
+                            }
+                        }
+                    }
+                    .font(.system(size: 14))
+                    .padding(.vertical, 6)
+                }
+            }
+            if !aparelhos.isEmpty {
+                Text("Aparelhos: " + aparelhos.joined(separator: ", "))
+                    .font(.system(size: 12)).foregroundStyle(secundario)
             }
         }
         .padding(.horizontal, 12)
@@ -673,6 +709,62 @@ struct PainelBateria: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(estilo.cartao))
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(estilo.bordaCartao, lineWidth: 1))
+    }
+
+    private func detalhePortaUSB(_ p: PortaUSB) -> String {
+        var partes: [String] = []
+        if let v = p.tensaoV { partes.append(Formato.numero(v, casas: 1) + " V") }
+        if let a = p.correnteA { partes.append(Formato.numero(a, casas: 2) + " A") }
+        partes.append(p.comDados ? "com dados" : "só energia")
+        return partes.joined(separator: " · ")
+    }
+
+    private func tituloCartao(_ texto: String) -> some View {
+        Text(texto)
+            .font(.system(size: 11, weight: .semibold))
+            .tracking(0.9)
+            .textCase(.uppercase)
+            .foregroundStyle(estilo.destaque)
+    }
+
+    private func cartaoModoEnergia(_ s: Situacao) -> some View {
+        let d = s.detalhes
+        let atual = d.modoEnergia?.titulo ?? (d.poucaEnergia ? ModoEnergia.poucaEnergia.titulo : ModoEnergia.automatico.titulo)
+        let opcoes: [ModoEnergia] = d.altoDesempenhoDisponivel ? [.automatico, .poucaEnergia, .altoDesempenho]
+                                                              : [.automatico, .poucaEnergia]
+        return VStack(alignment: .leading, spacing: 8) {
+            tituloCartao("Modo de energia")
+            Text(atual).font(.system(size: 17, weight: .semibold))
+            linhaModo("Na bateria", .bateria, opcoes, d.modoEnergiaBateria)
+            linhaModo("Na tomada", .tomada, opcoes, d.modoEnergiaTomada)
+            if let erro = controleModo.erro {
+                Text(erro).font(.system(size: 12)).foregroundStyle(Paleta.alto)
+            }
+            Text("Pede a senha de administrador do Mac.")
+                .font(.system(size: 12)).foregroundStyle(secundario)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(estilo.cartao))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(estilo.bordaCartao, lineWidth: 1))
+    }
+
+    private func linhaModo(_ rotulo: String, _ fonte: FonteEnergia, _ opcoes: [ModoEnergia],
+                           _ valor: ModoEnergia?) -> some View {
+        let trocando = controleModo.trocando == fonte
+        return VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 6) {
+                Text(rotulo).font(.system(size: 13)).foregroundStyle(secundario)
+                if trocando { ProgressView().controlSize(.small).scaleEffect(0.7).frame(width: 14, height: 14) }
+            }
+            chips(opcoes, selecao: valor ?? .automatico, titulo: \.titulo) { novo in
+                guard novo != valor else { return }
+                controleModo.trocar(fonte, para: novo, depois: acoes.recarregar)
+            }
+            .opacity(controleModo.trocando == nil ? 1 : 0.5)
+            .disabled(controleModo.trocando != nil)
+        }
     }
 
     // MARK: Atalhos
@@ -856,4 +948,9 @@ private struct GraficoBarras: View {
         }
         return i >= barras.count - 5 ? estilo.destaque : estilo.destaque.opacity(0.55)
     }
+}
+
+private struct AlturaConteudoPainel: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }
