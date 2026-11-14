@@ -1,13 +1,69 @@
-# My Stats
+<p align="center">
+  <img src="docs/logo/my-stats-icone-escuro.svg" width="128" height="128" alt="Ícone do My Stats">
+</p>
 
+<h1 align="center">My Stats</h1>
 
-App de barra de menus do macOS que mostra quanto da bateria o Mac gasta por hora, por exemplo `−11,3 %/h`, ou `+38,0 %/h` carregando. Não aparece no Dock. Interface em pt-BR, fiel ao desenho aprovado em `docs/desenho/*.dc.html`.
+<p align="center">
+  Bateria em %/h, CPU, GPU, memória, disco, rede e sensores na barra de menus do Mac.<br>
+  Cada item da barra é montado peça por peça, do seu jeito.
+</p>
 
-## Baixar
+<p align="center">
+  <a href="https://github.com/edufigueiredos/my-stats/releases/latest"><img src="https://img.shields.io/github/v/release/edufigueiredos/my-stats?label=vers%C3%A3o&color=E0B357" alt="Última versão"></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-1F1505" alt="macOS 14 ou mais novo">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/edufigueiredos/my-stats?label=licen%C3%A7a&color=9B7A3C" alt="Licença"></a>
+</p>
 
-Pegue o `My-Stats-<versão>.dmg` da [última release](https://github.com/edufigueiredos/my-stats/releases/latest), abra e arraste o My Stats para Aplicativos. O app é assinado e notarizado pela Apple e se atualiza sozinho pelas releases deste repositório (detalhes em [docs/atualizacao.md](docs/atualizacao.md)). Requer macOS 14 ou mais novo.
+<p align="center">
+  <a href="https://github.com/edufigueiredos/my-stats/releases/latest"><b>Baixar a última versão</b></a>
+</p>
 
-## O que o app mostra
+<p align="center">
+  <img src="docs/imagens/barra.png" width="680" alt="Barra de menus com CPU, GPU, disco, memória, latência, temperaturas e bateria">
+</p>
+
+## Um clique em qualquer item abre o painel
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/imagens/painel-geral.png" alt="Visão geral"><br><sub>Visão geral</sub></td>
+    <td align="center" width="33%"><img src="docs/imagens/painel-cpu.png" alt="Painel da CPU"><br><sub>CPU</sub></td>
+    <td align="center" width="33%"><img src="docs/imagens/painel-sensores.png" alt="Painel dos sensores"><br><sub>Sensores</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/imagens/painel-gpu.png" alt="Painel da GPU"><br><sub>GPU</sub></td>
+    <td align="center"><img src="docs/imagens/painel-rede.png" alt="Painel da rede"><br><sub>Rede</sub></td>
+    <td align="center"><img src="docs/imagens/painel-memoria.png" alt="Painel da memória"><br><sub>Memória</sub></td>
+  </tr>
+</table>
+
+## Do seu jeito
+
+Cinco formatos prontos por módulo, e um editor de peças para montar o resto: rótulo, valor, gráfico, anel, ícone, temperatura, potência, texto livre, cor por faixa, uma ou duas linhas. Os módulos podem ficar um por item, todos num item só ou em grupos.
+
+<p align="center"><img src="docs/imagens/formatos.png" alt="Formatos prontos de cada módulo"></p>
+<p align="center"><img src="docs/imagens/preferencias.png" alt="Preferências dos módulos com o editor do item"></p>
+
+## Destaques
+
+- **Bateria em %/h**: quanto o Mac gasta por hora, tempo até acabar ou encher, quem mais gasta, saúde, modo de energia e consumo de cada porta USB-C.
+- **CPU e GPU**: uso por núcleo, frequência e tempo ligada da GPU, temperatura e os processos que mais pesam.
+- **Memória e disco**: pressão, swap, espaço livre e velocidade de leitura e gravação.
+- **Rede**: velocidade, latência até 1.1.1.1 com histórico, dados do Wi-Fi e quem mais usa a rede.
+- **Sensores**: temperaturas, ventoinhas (rpm ou %) e quanto o Mac puxa da tomada.
+- **Avisos** por notificação, **6 temas** e histórico de 90 dias da bateria.
+- Tudo sem senha de administrador e sem `powermetrics`. Interface em português.
+
+## Baixar e atualizar
+
+Pegue o `My-Stats-<versão>.dmg` da [última release](https://github.com/edufigueiredos/my-stats/releases/latest), abra e arraste o My Stats para Aplicativos. O app é assinado e notarizado pela Apple e se atualiza sozinho pelas releases deste repositório (detalhes em [docs/atualizacao.md](docs/atualizacao.md)). Requer macOS 14 ou mais novo; os sensores foram testados num Mac com Apple Silicon.
+
+---
+
+# Como funciona
+
+## O que o app mostra (bateria)
 - **Item da barra de menus**: 6 formatos (Empilhado = padrão, Ícone, Valor, Ícone + valor, Duas linhas, Velocímetro) e 5 estados (cheia, carregando, descarregando, na tomada parado, consumo alto). Acima do limite configurado (padrão 20 %/h) o item fica laranja. Clique direito troca o formato, abre Mais informações, Preferências ou sai. O item é um `NSStatusItem` com a composição renderizada em imagem (template quando não há cor).
 - **Editor por estado** (Preferências): cada estado tem a sua montagem de peças, escolhidas entre 18 (Ritmo %/h, Ritmo e watts, Ritmo sobre a bateria, Tempo sobre a bateria, Porcentagem, Tempo, Horário, Watts, Etiqueta e valor, Texto livre, Ícone, Bateria, Barra vertical, Anel, Velocímetro, Número na pílula, Espaçador, Separador). O botão + abre a paleta e arrastar reordena. A chave "Duas linhas" separa a montagem em "Linha de cima" e "Linha de baixo", cada uma com o seu + e o seu alinhamento (Esquerda, Centro, Direita) e o "Espaço entre linhas" (−2 a +4 pt). Cada estado e a paleta mostram uma prévia em 2×, atualizada na hora, sobre barra Escura ou Clara.
   - **Peça**: clicar numa peça abre o popover "Ajustar peça", com mini prévia. Texto livre aceita os marcadores `{ritmo}`, `{pct}`, `{tempo}`, `{watts}` e `{horario}` (até 40 caracteres); Horário mostra a hora em que a bateria acaba ou termina de carregar. Opções por peça: texto, antes e depois, casas decimais (0 a 2), unidade (mostrar ou esconder), sinal, formato do tempo (4:46, 4h46, horário, minutos) e o símbolo da peça Ícone. Também: tamanho (automático ou 7 a 16 pt), peso, cor (do estado ou da paleta), altura (−3 a +3 pt), para a esquerda, para a direita, para a outra linha e tirar. O que ficar em automático segue a linha.
@@ -19,7 +75,7 @@ Pegue o `My-Stats-<versão>.dmg` da [última release](https://github.com/edufigu
 - **Painel** (clique no item): estado, ritmo médio, agora e última hora, anel com % e tempo, blocos Saindo/Entrando em W, Acaba em/Cheia em (com horário) e Bateria ou Até 80%, gráfico de ritmo (15 min, 1 h, 6 h, 24 h), Quem mais gasta (estimado), e carregando: Para onde vai o que entra (bateria x Mac) e aviso de carga otimizada. Linhas de corrente, tensão, temperatura, saúde (ciclos) e modo de energia.
 - **Mais informações**: Visão geral, Histórico, Apps, Saúde da bateria e Alertas; períodos Hoje, 7 dias e 30 dias; gráfico da carga com faixa "na tomada" e previsão tracejada; tabela de trechos; quem mais gastou (Wh); saúde; Exportar CSV.
 - **Preferências**: média do ritmo (Agora, 5 min, **15 min = padrão**, 1 h), casas decimais (0 ou 1), sentido (− e +, setas, só cor), tema, colorir a barra, limite de consumo alto, avisos, abrir ao iniciar e quantos dias guardar o histórico.
-- **Temas**: os 6 do Budsmith (Gold padrão, Black, White, Neon com cor escolhida, Liquid Glass que segue o sistema, Classic). A abordagem foi copiada de `Budsmith/Sources/FreeBudsUI/Theme.swift`, sem importar o pacote.
+- **Temas**: 6 temas (Gold padrão, Black, White, Neon com cor escolhida, Liquid Glass que segue o sistema, Classic).
 - **Avisos** (UserNotifications, só no .app): consumo acima de X %/h por 2 min, bateria abaixo de X%, carregou até X%, carregador abaixo de X W. Cada um dispara uma vez por cruzamento.
 
 ## De onde vem cada número
