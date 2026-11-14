@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 // MARK: - Ambiente de desenho
 
@@ -15,6 +16,18 @@ extension EnvironmentValues {
     }
 }
 
+private struct FonteDoItemChave: EnvironmentKey {
+    static let defaultValue = Font.Design.default
+}
+
+extension EnvironmentValues {
+    /// Família da fonte do item inteiro (padrão, arredondada, mono, serifada).
+    var fonteDoItem: Font.Design {
+        get { self[FonteDoItemChave.self] }
+        set { self[FonteDoItemChave.self] = newValue }
+    }
+}
+
 // MARK: - Dados derivados da situação
 
 extension Situacao {
@@ -23,42 +36,6 @@ extension Situacao {
     fileprivate var ritmoDoItem: Double { ritmoMedio ?? ritmoAgora }
 
     fileprivate var semRitmo: Bool { estado == .parado || estado == .cheia }
-
-    /// Ritmo "−11,3%/h" (sem espaço) ou "−11,3 %/h" (com).
-    fileprivate func textoRitmo(casas: Int, sentido: SentidoRitmo, espaco: Bool) -> String {
-        Formato.ritmo(ritmoDoItem, casas: casas, sentido: sentido, unidade: false) + (espaco ? " %/h" : "%/h")
-    }
-
-    /// Tempo curto: "4:46"; na tomada parada ou cheia, a palavra "tomada".
-    fileprivate var textoTempoCurto: String {
-        semRitmo ? "tomada" : Formato.duracao(minutos: minutosAteFim)
-    }
-
-    /// Tempo da peça Tempo: "4:46", "Parado" ou "Cheia".
-    fileprivate var textoTempo: String {
-        switch estado {
-        case .parado: return "Parado"
-        case .cheia: return "Cheia"
-        default: return Formato.duracao(minutos: minutosAteFim)
-        }
-    }
-
-    /// Potência: o que entra (carregando), o que sai (descarregando) ou o que sobra na tomada.
-    fileprivate var textoWatts: String {
-        switch estado {
-        case .carregando:
-            return Formato.watts(detalhes.entradaSistemaW ?? leitura.watts, casas: 0)
-        case .parado, .cheia:
-            return Formato.watts(leitura.watts, casas: 0)
-        default:
-            return Formato.watts(leitura.watts, casas: 1)
-        }
-    }
-
-    /// "10,7 W · 4:46".
-    fileprivate var textoWattsTempo: String {
-        semRitmo ? "" : "\(textoWatts) · \(Formato.duracao(minutos: minutosAteFim))"
-    }
 }
 
 // MARK: - Desenhos básicos (viewBox do desenho, escalados)
@@ -232,18 +209,25 @@ struct VistaPeca: View {
     /// Quando o item tem duas linhas: o texto usa o tamanho da linha e os desenhos encolhem para ~11 pt.
     var linha: LinhaPeca? = nil
     var escala: CGFloat = 1
+    /// Ajustes do item: tamanho do texto em pt (nil = o da linha) e peso (nil = o da linha).
+    var tamanho: Double? = nil
+    var negrito: Bool? = nil
+
+    /// Ajustes completos da peça (texto livre, prefixo, formato, símbolo...); nil = automático.
+    var item: ItemPeca? = nil
 
     @Environment(\.desenhoModelo) private var modelo
+    @Environment(\.fonteDoItem) private var fonte
 
-    private var tamanhoTexto: CGFloat {
-        switch linha {
-        case .cima: return 10 * escala
-        case .baixo: return 9 * escala
-        case nil: return (grande ? 16 : 13) * escala
-        }
-    }
+    private var tamanhoAuto: CGFloat { VistaPeca.tamanhoAutomatico(linha: linha, grande: grande) }
+
+    /// Quanto o item foi ampliado ou reduzido em relação ao tamanho automático; os desenhos seguem.
+    private var razao: CGFloat { tamanho.map { CGFloat($0) / tamanhoAuto } ?? 1 }
+
+    private var tamanhoTexto: CGFloat { (tamanho.map { CGFloat($0) } ?? tamanhoAuto) * escala }
 
     private var pesoTexto: Font.Weight {
+        if let negrito { return negrito ? .bold : .medium }
         switch linha {
         case .cima: return .bold
         case .baixo: return .medium
@@ -251,8 +235,17 @@ struct VistaPeca: View {
         }
     }
 
+    /// Tamanho automático do texto: 10 pt (cima), 9 pt (baixo), 13 pt (uma linha) ou 16 pt (valor ao lado de texto sobre a bateria).
+    nonisolated static func tamanhoAutomatico(linha: LinhaPeca?, grande: Bool) -> CGFloat {
+        switch linha {
+        case .cima: return 10
+        case .baixo: return 9
+        case nil: return grande ? 16 : 13
+        }
+    }
+
     /// Escala dos desenhos: em duas linhas cada um encolhe para caber em ~11 pt de altura.
-    private func e(_ fator: CGFloat) -> CGFloat { linha == nil ? escala : escala * fator }
+    private func e(_ fator: CGFloat) -> CGFloat { (linha == nil ? escala : escala * fator) * razao }
 
     var body: some View {
         conteudo
@@ -264,34 +257,55 @@ struct VistaPeca: View {
     private var conteudo: some View {
         switch peca {
         case .ritmo:
-            texto(situacao.textoRitmo(casas: casas, sentido: sentido, espaco: linha != nil))
+            texto(TextoPeca.moldura(TextoPeca.ritmo(situacao, item: item, casas: casas, sentido: sentido, espaco: linha != nil), item: item))
         case .porcentagem:
-            texto(Formato.percentual(situacao.leitura.percentual))
+            texto(TextoPeca.moldura(TextoPeca.porcentagem(situacao, item: item), item: item))
         case .tempo:
-            texto(situacao.textoTempo)
+            texto(TextoPeca.moldura(TextoPeca.tempo(situacao, item: item, curto: false), item: item))
+        case .horario:
+            texto(TextoPeca.moldura(TextoPeca.horario(situacao, item: item), item: item))
+        case .texto:
+            texto(TextoPeca.moldura(
+                TextoPeca.expandir(item?.texto ?? TextoPeca.textoLivrePadrao, situacao, item: item, casas: casas, sentido: sentido),
+                item: item))
         case .watts:
-            texto(situacao.textoWatts)
+            texto(TextoPeca.moldura(TextoPeca.watts(situacao, item: item), item: item))
         case .ritmoWatts:
             duasLinhas(
                 topo: situacao.semRitmo
                     ? "Na tomada"
-                    : situacao.textoRitmo(casas: casas, sentido: sentido, espaco: true)
-                        + " · " + Formato.percentual(situacao.leitura.percentual),
+                    : TextoPeca.ritmo(situacao, item: item, casas: casas, sentido: sentido, espaco: true)
+                        + " · " + TextoPeca.porcentagem(situacao, item: item),
                 baixo: situacao.semRitmo
                     ? (situacao.estado == .cheia ? "cheia em 100%" : "parado em \(Formato.percentual(situacao.leitura.percentual))")
-                    : situacao.textoWattsTempo)
+                    : (TextoPeca.watts(situacao, item: item) + " · " + TextoPeca.tempo(situacao, item: item, curto: false)))
         case .etiquetaValor:
-            VStack(spacing: -1 * e(0.55)) {
-                Text("BAT").font(.system(size: 8 * e(0.55), weight: .semibold)).opacity(0.7)
-                Text(Formato.percentual(situacao.leitura.percentual))
-                    .font(.system(size: 12 * e(0.55), weight: .bold)).monospacedDigit()
+            if linha != nil {
+                // Dentro de uma linha: "BAT" pequeno ao lado do valor.
+                HStack(spacing: 2 * e(1)) {
+                    Text(TextoPeca.etiqueta(item: item)).font(.system(size: tamanhoTexto * 0.8, weight: .semibold, design: fonte)).opacity(0.7)
+                    Text(TextoPeca.porcentagem(situacao, item: item))
+                        .font(.system(size: tamanhoTexto, weight: pesoTexto, design: fonte)).monospacedDigit()
+                }
+                .lineLimit(1)
+            } else {
+                VStack(spacing: -1 * e(0.55)) {
+                    Text(TextoPeca.etiqueta(item: item)).font(.system(size: 8 * e(0.55), weight: .semibold, design: fonte)).opacity(0.7)
+                    Text(TextoPeca.porcentagem(situacao, item: item))
+                        .font(.system(size: 12 * e(0.55), weight: negrito == false ? .medium : .bold, design: fonte)).monospacedDigit()
+                }
             }
         case .ritmoSobreBateria:
-            textoSobreBateria(situacao.textoRitmo(casas: casas, sentido: sentido, espaco: false))
+            textoSobreBateria(TextoPeca.moldura(TextoPeca.ritmo(situacao, item: item, casas: casas, sentido: sentido, espaco: false), item: item))
         case .tempoSobreBateria:
-            textoSobreBateria(situacao.textoTempoCurto)
+            textoSobreBateria(TextoPeca.moldura(TextoPeca.tempo(situacao, item: item, curto: true), item: item))
         case .icone:
-            DesenhoGlifo(estado: situacao.estado, cor: cor, altura: 12 * e(0.9))
+            if let simbolo = item?.simbolo {
+                Image(systemName: simbolo)
+                    .font(.system(size: 12 * e(0.9) * 0.9, weight: .semibold))
+            } else {
+                DesenhoGlifo(estado: situacao.estado, cor: cor, altura: 12 * e(0.9))
+            }
         case .bateria:
             HStack(spacing: 4 * e(0.7)) {
                 DesenhoGlifo(estado: situacao.estado, cor: cor, altura: 11 * e(0.7))
@@ -311,42 +325,51 @@ struct VistaPeca: View {
         case .numeroPilula:
             pilula
         case .espacador:
-            Color.clear.frame(width: 6 * escala, height: 1)
+            Color.clear.frame(width: 6 * escala * razao, height: 1)
         case .separador:
             Text("·")
-                .font(.system(size: tamanhoTexto, weight: .bold))
+                .font(.system(size: tamanhoTexto, weight: .bold, design: fonte))
                 .opacity(0.7)
         }
     }
 
     private func texto(_ s: String) -> some View {
         Text(s)
-            .font(.system(size: tamanhoTexto, weight: pesoTexto))
+            .font(.system(size: tamanhoTexto, weight: pesoTexto, design: fonte))
             .monospacedDigit()
             .lineLimit(1)
     }
 
     private func duasLinhas(topo: String, baixo: String) -> some View {
         VStack(alignment: .leading, spacing: -1.5 * escala) {
-            Text(topo).font(.system(size: 10 * escala, weight: .bold)).monospacedDigit()
-            Text(baixo).font(.system(size: 9 * escala, weight: .medium)).monospacedDigit().opacity(0.85)
+            Text(topo).font(.system(size: 10 * escala * razao, weight: .bold, design: fonte)).monospacedDigit()
+            Text(baixo).font(.system(size: 9 * escala * razao, weight: .medium, design: fonte)).monospacedDigit().opacity(0.85)
         }
         .lineLimit(1)
     }
 
+    /// Texto pequeno sobre a bateria; dentro de uma linha das duas, texto ao lado da bateria pequena.
+    @ViewBuilder
     private func textoSobreBateria(_ s: String) -> some View {
-        VStack(spacing: 1.3 * e(0.62)) {
-            Text(s)
-                .font(.system(size: 8.5 * e(0.62), weight: .bold))
-                .monospacedDigit()
-                .lineLimit(1)
-            DesenhoBateria(fracao: situacao.fracaoCarga, cor: cor, largura: 18 * e(0.62))
+        if linha != nil {
+            HStack(spacing: 2.5 * e(1)) {
+                texto(s)
+                DesenhoBateria(fracao: situacao.fracaoCarga, cor: cor, largura: 14 * e(1))
+            }
+        } else {
+            VStack(spacing: 1.3 * e(0.62)) {
+                Text(s)
+                    .font(.system(size: 8.5 * e(0.62), weight: negrito == false ? .medium : .bold, design: fonte))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                DesenhoBateria(fracao: situacao.fracaoCarga, cor: cor, largura: 18 * e(0.62))
+            }
         }
     }
 
     private var pilula: some View {
         let numero = Text("\(situacao.leitura.percentual)")
-            .font(.system(size: 10 * e(0.8), weight: .heavy))
+            .font(.system(size: 10 * e(0.8), weight: .heavy, design: fonte))
             .monospacedDigit()
         return numero
             .foregroundStyle(modelo ? Color.black : Color(hex: "#17110A"))
@@ -368,6 +391,9 @@ struct MiniaturaPeca: View {
     var casas: Int
     var sentido: SentidoRitmo
     var mostrarTitulo = true
+    var negrito: Bool? = nil
+    /// Ajustes da peça (texto, símbolo, formato) para a lista do editor mostrar o que o usuário escolheu.
+    var item: ItemPeca? = nil
 
     private var empilhada: Bool { peca == .ritmoSobreBateria || peca == .tempoSobreBateria }
 
@@ -381,7 +407,7 @@ struct MiniaturaPeca: View {
                     }
                 } else {
                     VistaPeca(peca: peca, situacao: situacao, cor: cor, casas: casas, sentido: sentido,
-                              grande: false, escala: empilhada ? 1.15 : 1.3)
+                              grande: false, escala: empilhada ? 1.15 : 1.3, negrito: negrito, item: item)
                 }
             }
             .frame(minWidth: 30, minHeight: 30)
@@ -393,5 +419,64 @@ struct MiniaturaPeca: View {
                     .multilineTextAlignment(.center)
             }
         }
+    }
+}
+
+// MARK: - Altura medida (para caber nos 22 pt)
+
+extension ItemPeca {
+    /// Altura de uma linha de texto na fonte real do sistema (tamanho, peso e família), em pt.
+    nonisolated static func alturaTexto(tamanho: CGFloat, peso: NSFont.Weight, design: Font.Design) -> CGFloat {
+        var fonte = NSFont.systemFont(ofSize: tamanho, weight: peso)
+        let nome: NSFontDescriptor.SystemDesign
+        switch design {
+        case .serif: nome = .serif
+        case .rounded: nome = .rounded
+        case .monospaced: nome = .monospaced
+        default: nome = .default
+        }
+        if nome != .default, let d = fonte.fontDescriptor.withDesign(nome), let f = NSFont(descriptor: d, size: tamanho) {
+            fonte = f
+        }
+        return ceil(fonte.ascender - fonte.descender + fonte.leading)
+    }
+
+    /// Altura do item em pt, na escala 1, dentro da linha dada (nil = uma linha só), medida com a
+    /// fonte real nas peças de texto e com os mesmos fatores do desenho nas demais.
+    /// Serve para encolher o conjunto proporcionalmente quando a soma passa de 22 pt.
+    func alturaNatural(linha: LinhaPeca?, grande: Bool, design: Font.Design = .default) -> CGFloat {
+        let auto = VistaPeca.tamanhoAutomatico(linha: linha, grande: grande)
+        let t = CGFloat(tamanho ?? Double(auto))
+        let r = t / auto
+        let duas = linha != nil
+        let peso: NSFont.Weight
+        if let negrito { peso = negrito ? .bold : .medium } else {
+            switch linha {
+            case .cima: peso = .bold
+            case .baixo: peso = .medium
+            case nil: peso = .semibold
+            }
+        }
+        func texto(_ tam: CGFloat, _ p: NSFont.Weight) -> CGFloat { ItemPeca.alturaTexto(tamanho: tam, peso: p, design: design) }
+        let extra = CGFloat(abs(deslocamentoY ?? 0))
+        let base: CGFloat
+        switch peca {
+        case .ritmo, .porcentagem, .tempo, .horario, .texto, .watts, .separador:
+            base = texto(t, peca == .separador ? .bold : peso)
+        case .ritmoWatts:
+            base = texto(10 * r, .bold) + texto(9 * r, .medium) - 1.5 * r
+        case .etiquetaValor:
+            base = duas ? texto(t, peso) : texto(8 * r, .semibold) + texto(12 * r, negrito == false ? .medium : .bold) - 1 * r
+        case .ritmoSobreBateria, .tempoSobreBateria:
+            base = duas ? texto(t, peso) : texto(8.5 * r, negrito == false ? .medium : .bold) + 1.3 * r + 9 * r
+        case .icone: base = (duas ? 10.8 : 12) * r
+        case .bateria: base = (duas ? 8.4 : 12) * r
+        case .barraVertical: base = (duas ? 10.9 : 14) * r
+        case .anel: base = (duas ? 10.8 : 15) * r
+        case .velocimetro: base = (duas ? 10.9 : 17) * r
+        case .numeroPilula: base = (duas ? 10.8 : 13.5) * r
+        case .espacador: return 1
+        }
+        return base + extra
     }
 }

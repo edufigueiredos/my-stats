@@ -5,18 +5,25 @@ import SwiftUI
 
 enum CorDaBarra {
     /// Cor a desenhar, ou nil quando o item deve ser "template" (o sistema adapta à barra clara ou escura).
-    /// Colorir desligado só pinta o estado alto (laranja, como no desenho); branco puro também vira template,
-    /// senão o texto sumiria numa barra clara.
-    static func hex(estado: EstadoBarra, config: ConfigEstado, colorir: Bool) -> String? {
+    /// Uma faixa de cor que vale vence tudo, mesmo com Colorir desligado. Sem faixa, Colorir desligado só pinta
+    /// o estado alto (laranja, como no desenho). Branco puro vira template, senão o texto sumiria numa barra clara.
+    static func hex(estado: EstadoBarra, situacao: Situacao, config: ConfigEstado, colorir: Bool) -> String? {
+        if config.faixas.contains(where: { $0.vale(para: situacao) }) {
+            let hex = config.corDoEstadoHex(situacao)
+            return hex.uppercased() == "#FFFFFF" ? nil : hex
+        }
         if estado == .alto { return colorir ? config.corHex : EstadoBarra.alto.corPadraoHex }
         guard colorir else { return nil }
         return config.corHex.uppercased() == "#FFFFFF" ? nil : config.corHex
     }
+
+    static func ehBranco(_ hex: String?) -> Bool { hex == nil || hex?.uppercased() == "#FFFFFF" }
 }
 
 // MARK: - Vista do item
 
 /// O item da barra de menus: as peças do estado lado a lado (ou em duas linhas empilhadas), 22 pt de altura.
+/// `escala` amplia tudo (prévias do editor).
 struct VistaItemBarra: View {
     var situacao: Situacao
     var config: ConfigEstado
@@ -25,44 +32,122 @@ struct VistaItemBarra: View {
     var sentido: SentidoRitmo
     /// Desenho para virar imagem "template": tudo em preto, só o alfa importa.
     var modelo = false
+    var escala: CGFloat = 1
+    /// Cor das peças sem cor própria quando não há cor do estado (nas prévias, o texto do tema).
+    var corBase: Color = .primary
+
+    static let alturaBarra: CGFloat = 22
+    /// Altura útil quando há pílula ou contorno.
+    static let alturaComFundo: CGFloat = 18
 
     private var cor: Color {
         if modelo { return .black }
-        if let hex = CorDaBarra.hex(estado: situacao.estado, config: config, colorir: colorir) { return Color(hex: hex) }
-        return .primary
+        if let hex = CorDaBarra.hex(estado: situacao.estado, situacao: situacao, config: config, colorir: colorir) {
+            return Color(hex: hex)
+        }
+        return corBase
     }
+
+    private func corDo(_ item: ItemPeca) -> Color {
+        if modelo { return .black }
+        if let hex = item.corHex { return CorDaBarra.ehBranco(hex) ? corBase : Color(hex: hex) }
+        return cor
+    }
+
+    private var corFundo: Color {
+        if modelo { return .black }
+        if let hex = config.corFundoHex { return CorDaBarra.ehBranco(hex) ? corBase : Color(hex: hex) }
+        return cor
+    }
+
+    private var comFundo: Bool { config.fundo != .nenhum }
 
     /// Com texto pequeno sobre a bateria, o valor ao lado fica maior (Empilhado).
     private var empilhado: Bool {
-        config.pecas.contains(.tempoSobreBateria) || config.pecas.contains(.ritmoSobreBateria)
+        config.pecas.contains { $0.peca == .tempoSobreBateria || $0.peca == .ritmoSobreBateria }
     }
 
-    private func linha(_ pecas: [Peca], _ qual: LinhaPeca) -> some View {
-        HStack(spacing: 3) {
-            ForEach(Array(pecas.enumerated()), id: \.offset) { _, peca in
-                VistaPeca(peca: peca, situacao: situacao, cor: cor, casas: casas, sentido: sentido, linha: qual)
-            }
+    private func alturaDaLinha(_ itens: [ItemPeca], _ qual: LinhaPeca?) -> CGFloat {
+        let design = config.fonte.design
+        return itens.map { $0.alturaNatural(linha: qual, grande: empilhado && qual == nil, design: design) }.max() ?? 0
+    }
+
+    /// Fator que encolhe o conjunto quando a soma das alturas (com o tamanho geral) passa da altura útil.
+    private var ajuste: CGFloat {
+        let tg = CGFloat(config.tamanhoGeral)
+        let total = (config.duasLinhas
+            ? alturaDaLinha(config.pecas, .cima) + alturaDaLinha(config.pecasBaixo, .baixo) + CGFloat(config.espacoLinhas)
+            : alturaDaLinha(config.pecas, nil)) * tg
+        let util = comFundo ? Self.alturaComFundo : Self.alturaBarra
+        return total > util ? util / total : 1
+    }
+
+    private func vista(_ item: ItemPeca, _ qual: LinhaPeca?, _ esc: CGFloat) -> some View {
+        VistaPeca(peca: item.peca, situacao: situacao, cor: corDo(item), casas: casas, sentido: sentido,
+                  grande: empilhado && qual == nil, linha: qual, escala: esc,
+                  tamanho: item.tamanho, negrito: item.negrito, item: item)
+            .offset(y: -CGFloat(item.deslocamentoY ?? 0) * esc)
+    }
+
+    private func linha(_ itens: [ItemPeca], _ qual: LinhaPeca, _ esc: CGFloat) -> some View {
+        let espaco = config.espacoPecas.map { CGFloat($0) } ?? 3
+        return HStack(alignment: config.alinhamentoVertical.vertical, spacing: espaco * esc) {
+            ForEach(itens) { item in vista(item, qual, esc) }
         }
         .opacity(qual == .baixo ? 0.85 : 1)
+        .frame(maxWidth: .infinity, alignment: config.alinhamento(em: qual).alinhamento)
+    }
+
+    private var conteudo: some View {
+        let esc = escala * ajuste * CGFloat(config.tamanhoGeral)
+        let minimo = config.larguraMinima.map { CGFloat($0) * escala }
+        return Group {
+            if config.duasLinhas {
+                VStack(alignment: .leading, spacing: CGFloat(config.espacoLinhas) * esc) {
+                    linha(config.pecas, .cima, esc)
+                    linha(config.pecasBaixo, .baixo, esc)
+                }
+                .frame(minWidth: minimo, alignment: .leading)
+            } else {
+                let espaco = config.espacoPecas.map { CGFloat($0) } ?? 4
+                HStack(alignment: config.alinhamentoVertical.vertical, spacing: espaco * esc) {
+                    ForEach(config.pecas) { item in vista(item, nil, esc) }
+                }
+                .frame(minWidth: minimo, alignment: config.alinhamento(em: .cima).alinhamento)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var comMoldura: some View {
+        if comFundo {
+            conteudo
+                .padding(.horizontal, 4 * escala)
+                .frame(height: Self.alturaComFundo * escala)
+                .background {
+                    if config.fundo == .pilula {
+                        Capsule().fill(corFundo.opacity(0.25))
+                    } else {
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .strokeBorder(corFundo, lineWidth: 1 * escala)
+                    }
+                }
+        } else {
+            conteudo
+        }
     }
 
     var body: some View {
         Group {
-            if config.duasLinhas {
-                VStack(alignment: .leading, spacing: -1.5) {
-                    linha(config.pecas, .cima)
-                    linha(config.pecasBaixo, .baixo)
-                }
+            if config.oculto {
+                Circle().fill(cor).frame(width: 5 * escala, height: 5 * escala)
             } else {
-                HStack(spacing: 4) {
-                    ForEach(Array(config.pecas.enumerated()), id: \.offset) { _, peca in
-                        VistaPeca(peca: peca, situacao: situacao, cor: cor, casas: casas, sentido: sentido, grande: empilhado)
-                    }
-                }
+                comMoldura
             }
         }
         .environment(\.desenhoModelo, modelo)
-        .frame(height: 22)
+        .environment(\.fonteDoItem, config.fonte.design)
+        .frame(height: Self.alturaBarra * escala)
         .fixedSize()
     }
 }
@@ -73,10 +158,16 @@ enum RenderizadorBarra {
     /// Renderiza o item em escala 2, 22 pt de altura. Sem cor, a imagem é template e desenhada em preto.
     @MainActor
     static func imagem(situacao: Situacao, config: ConfigEstado, colorir: Bool, casas: Int,
-                       sentido: SentidoRitmo) -> NSImage {
-        let modelo = CorDaBarra.hex(estado: situacao.estado, config: config, colorir: colorir) == nil
+                       sentido: SentidoRitmo, escura: Bool) -> NSImage {
+        // Cor do estado, cor própria de peça ou cor de fundo impedem o modo template (ele só tem alfa).
+        // Fora do template, as peças sem cor seguem a aparência da barra: brancas na escura, escuras na clara.
+        let comCorPropria = (config.pecas + config.pecasBaixo).contains { !CorDaBarra.ehBranco($0.corHex) }
+        let semCorDoEstado = CorDaBarra.hex(estado: situacao.estado, situacao: situacao, config: config,
+                                            colorir: colorir) == nil
+        let modelo = semCorDoEstado && !comCorPropria && CorDaBarra.ehBranco(config.corFundoHex)
+        let corBase: Color = escura ? .white : Color.black.opacity(0.85)
         let vista = VistaItemBarra(situacao: situacao, config: config, colorir: colorir, casas: casas,
-                                   sentido: sentido, modelo: modelo)
+                                   sentido: sentido, modelo: modelo, corBase: corBase)
         let renderizador = ImageRenderer(content: vista)
         renderizador.scale = 2
         guard let cg = renderizador.cgImage else {
@@ -97,6 +188,13 @@ final class ControladorBarra: NSObject {
     private let pegarSituacao: () -> Situacao?
     private let abrirDetalhes: () -> Void
     private let abrirPreferencias: () -> Void
+    private var observacaoAparencia: NSKeyValueObservation?
+    /// Situação de exemplo por estado ("Ver na barra"), para não recalcular a série a cada redesenho.
+    private var exemplos: [EstadoBarra: Situacao] = [:]
+
+    private var barraEscura: Bool {
+        statusItem.button?.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+    }
 
     init(conteudoPainel: @escaping () -> AnyView,
          abrirDetalhes: @escaping () -> Void,
@@ -114,6 +212,9 @@ final class ControladorBarra: NSObject {
             botao.action = #selector(clicou(_:))
             botao.sendAction(on: [.leftMouseUp, .rightMouseUp])
             botao.imagePosition = .imageOnly
+            observacaoAparencia = botao.observe(\.effectiveAppearance) { [weak self] _, _ in
+                Task { @MainActor [weak self] in self?.redesenhar() }
+            }
         }
         redesenhar()
     }
@@ -121,16 +222,28 @@ final class ControladorBarra: NSObject {
     /// Lê a situação e os Ajustes e põe a imagem na barra. A T8 chama quando o Monitor muda.
     func redesenhar() {
         guard let botao = statusItem.button else { return }
+        let ajustes = Ajustes.compartilhado
+        // "Ver na barra": enquanto o editor pede, mostra a montagem daquele estado com uma situação de exemplo.
+        if let previa = ajustes.estadoEmPrevia {
+            let exemplo: Situacao
+            if let guardado = exemplos[previa] { exemplo = guardado } else {
+                exemplo = Situacao.exemplo(previa)
+                exemplos[previa] = exemplo
+            }
+            botao.image = RenderizadorBarra.imagem(
+                situacao: exemplo, config: ajustes.config(previa), colorir: ajustes.colorirBarra,
+                casas: ajustes.casasDecimais, sentido: ajustes.sentido, escura: barraEscura)
+            return
+        }
         guard let situacao = pegarSituacao() else {
             let simbolo = NSImage(systemSymbolName: "battery.0", accessibilityDescription: "Sem bateria")
             simbolo?.isTemplate = true
             botao.image = simbolo
             return
         }
-        let ajustes = Ajustes.compartilhado
         botao.image = RenderizadorBarra.imagem(
             situacao: situacao, config: ajustes.config(situacao.estado), colorir: ajustes.colorirBarra,
-            casas: ajustes.casasDecimais, sentido: ajustes.sentido)
+            casas: ajustes.casasDecimais, sentido: ajustes.sentido, escura: barraEscura)
     }
 
     // MARK: Cliques
@@ -167,6 +280,19 @@ final class ControladorBarra: NSObject {
             item.state = formato == atual ? .on : .off
             menu.addItem(item)
         }
+        let salvos = Ajustes.compartilhado.formatosSalvos
+        if !salvos.isEmpty {
+            let submenu = NSMenu()
+            for f in salvos {
+                let item = NSMenuItem(title: f.nome, action: #selector(escolherSalvo(_:)), keyEquivalent: "")
+                item.target = self
+                item.representedObject = f.id
+                submenu.addItem(item)
+            }
+            let pai = NSMenuItem(title: "Meus formatos", action: nil, keyEquivalent: "")
+            pai.submenu = submenu
+            menu.addItem(pai)
+        }
         menu.addItem(.separator())
         let detalhes = NSMenuItem(title: "Mais informações", action: #selector(chamarDetalhes), keyEquivalent: "")
         detalhes.target = self
@@ -191,6 +317,13 @@ final class ControladorBarra: NSObject {
         redesenhar()
     }
 
+    @objc private func escolherSalvo(_ item: NSMenuItem) {
+        guard let id = item.representedObject as? UUID,
+              let f = Ajustes.compartilhado.formatosSalvos.first(where: { $0.id == id }) else { return }
+        Ajustes.compartilhado.aplicarSalvo(f)
+        redesenhar()
+    }
+
     @objc private func chamarDetalhes() { abrirDetalhes() }
     @objc private func chamarPreferencias() { abrirPreferencias() }
     @objc private func sair() { NSApp.terminate(nil) }
@@ -201,31 +334,43 @@ final class ControladorBarra: NSObject {
 @MainActor
 enum FotoBarra {
     /// O item sobre uma faixa que imita a barra de menus escura de Main.dc.html, com a predefinição do formato.
-    static func imagemDeConferencia(formato: FormatoBarra, estado: EstadoBarra) -> NSImage {
+    static func imagemDeConferencia(formato: FormatoBarra, estado: EstadoBarra, clara: Bool = false,
+                                    colorir: Bool = false) -> NSImage {
+        imagemDeConferencia(config: formato.config(para: estado, corHex: estado.corPadraoHex), estado: estado,
+                            clara: clara, colorir: colorir)
+    }
+
+    /// O mesmo, com uma config qualquer (o exemplo montado à mão, por exemplo). `clara` usa uma barra clara.
+    static func imagemDeConferencia(config: ConfigEstado, estado: EstadoBarra, clara: Bool = false,
+                                    colorir: Bool = false) -> NSImage {
         let situacao = Situacao.exemplo(estado)
-        let config = formato.config(para: estado, corHex: estado.corPadraoHex)
-        // Como no desenho, só o consumo alto é colorido; o resto fica branco.
-        let vista = VistaItemBarra(situacao: situacao, config: config, colorir: false, casas: 1, sentido: .sinais)
+        // Como no desenho, só o consumo alto é colorido (a menos que se peça colorir); o resto segue a barra.
+        let corBase: Color = clara ? Color.black.opacity(0.85) : .white
+        let vista = VistaItemBarra(situacao: situacao, config: config, colorir: colorir, casas: 1, sentido: .sinais,
+                                   corBase: corBase)
+        let fundoFaixa: LinearGradient = clara
+            ? LinearGradient(colors: [Color(hex: "#E9E4DC"), Color(hex: "#F6F2EA")], startPoint: .topLeading, endPoint: .bottomTrailing)
+            : LinearGradient(colors: [Color(hex: "#5A1E1C"), Color(hex: "#7A2A26")], startPoint: .topLeading, endPoint: .bottomTrailing)
         let faixa = ZStack(alignment: .topLeading) {
-            LinearGradient(colors: [Color(hex: "#5A1E1C"), Color(hex: "#7A2A26")],
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
+            fundoFaixa
             HStack(spacing: 10) {
                 Spacer(minLength: 0)
                 Text("13/11")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.55))
+                    .foregroundStyle(clara ? Color.black.opacity(0.55) : Color.white.opacity(0.55))
                 vista
                     .padding(.horizontal, 6)
                     .frame(height: 24)
-                    .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(.white.opacity(0.16)))
+                    .background(RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .fill(clara ? Color.white.opacity(0.7) : Color.white.opacity(0.16)))
             }
             .padding(.horizontal, 10)
             .frame(height: 32)
             .frame(maxWidth: .infinity)
-            .background(Color(red: 28 / 255, green: 18 / 255, blue: 16 / 255).opacity(0.55))
+            .background(clara ? Color.clear : Color(red: 28 / 255, green: 18 / 255, blue: 16 / 255).opacity(0.55))
         }
         .frame(width: 250, height: 56)
-        .environment(\.colorScheme, .dark)
+        .environment(\.colorScheme, clara ? .light : .dark)
         let renderizador = ImageRenderer(content: faixa)
         renderizador.scale = 2
         guard let cg = renderizador.cgImage else { return NSImage() }

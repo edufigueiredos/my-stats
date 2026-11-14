@@ -9,6 +9,11 @@ enum LeitorEnergia {
         var detalhes = DetalhesEnergia.vazio
         detalhes.poucaEnergia = ProcessInfo.processInfo.isLowPowerModeEnabled
         lerAdaptador(em: &detalhes)
+        lerCondicao(em: &detalhes)
+        let modos = LeitorModoEnergia.atual()
+        detalhes.modoEnergia = modos.atual
+        detalhes.modoEnergiaBateria = modos.bateria
+        detalhes.modoEnergiaTomada = modos.tomada
 
         let servico = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSmartBattery"))
         guard servico != 0 else { return detalhes }
@@ -36,6 +41,9 @@ enum LeitorEnergia {
             if graus > -20, graus < 120 { detalhes.temperaturaC = graus }
         }
         detalhes.ciclos = inteiro("CycleCount")
+        if let ciclos = inteiro("DesignCycleCount9C"), ciclos > 0 { detalhes.ciclosProjeto = ciclos }
+        // MaxCapacity vem em % no Apple Silicon; em mAh (valor grande) não serve como saúde.
+        if let max = inteiro("MaxCapacity"), max > 0, max <= 100 { detalhes.saudeSistemaPercentual = max }
         if let fabrica = inteiro("DesignCapacity"), fabrica > 0 { detalhes.capacidadeFabricaMah = fabrica }
 
         // Entrada do sistema em mW; 0 ou ausente (sem tomada) vira nil.
@@ -56,9 +64,119 @@ enum LeitorEnergia {
         return detalhes
     }
 
+    /// BatteryHealth / BatteryHealthCondition da fonte interna, traduzidos.
+    private static func lerCondicao(em detalhes: inout DetalhesEnergia) {
+        guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
+              let lista = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef] else { return }
+        for fonte in lista {
+            guard let desc = IOPSGetPowerSourceDescription(info, fonte)?.takeUnretainedValue() as? [String: Any],
+                  (desc[kIOPSTypeKey] as? String) == kIOPSInternalBatteryType else { continue }
+            let condicao = (desc["BatteryHealthCondition"] as? String) ?? ""
+            let saude = (desc["BatteryHealth"] as? String) ?? ""
+            let texto = condicao.isEmpty ? saude : condicao
+            switch texto {
+            case "", "Good": detalhes.condicao = "Normal"
+            case "Check Battery", "Service Recommended": detalhes.condicao = "Manutenção recomendada"
+            default: detalhes.condicao = texto
+            }
+            return
+        }
+    }
+
     private static func lerAdaptador(em detalhes: inout DetalhesEnergia) {
         guard let info = IOPSCopyExternalPowerAdapterDetails()?.takeRetainedValue() as? [String: Any] else { return }
         if let w = info["Watts"] as? NSNumber, w.doubleValue > 0 { detalhes.adaptadorW = w.doubleValue }
         detalhes.adaptadorNome = (info["Name"] as? String) ?? (info["Description"] as? String)
+    }
+}
+
+/// Modo de energia lido do pmset, no máximo uma vez a cada 60 s e fora da main thread.
+/// Enquanto não há leitura (ou se o pmset falhar) vale ProcessInfo.isLowPowerModeEnabled.
+enum LeitorModoEnergia {
+    struct Modos: Sendable {
+        var atual: ModoEnergia?
+        var bateria: ModoEnergia?
+        var tomada: ModoEnergia?
+    }
+
+    private final class Cache: @unchecked Sendable {
+        private let trava = NSLock()
+        private var modos: Modos?
+        private var ultima = Date.distantPast
+        private var lendo = false
+
+        /// Devolve o último valor e diz se é hora de renovar (marcando que há leitura em curso).
+        func consultar() -> (Modos?, Bool) {
+            trava.lock(); defer { trava.unlock() }
+            let velho = Date().timeIntervalSince(ultima) >= 60
+            let renovar = velho && !lendo
+            if renovar { lendo = true }
+            return (modos, renovar)
+        }
+
+        func guardar(_ novos: Modos?) {
+            trava.lock(); defer { trava.unlock() }
+            if let novos { modos = novos }
+            ultima = Date()
+            lendo = false
+        }
+    }
+
+    private static let cache = Cache()
+
+    static func atual() -> Modos {
+        let (guardado, renovar) = cache.consultar()
+        if renovar {
+            DispatchQueue.global(qos: .utility).async { cache.guardar(ler()) }
+        }
+        if let guardado { return guardado }
+        let baixa = ProcessInfo.processInfo.isLowPowerModeEnabled
+        return Modos(atual: baixa ? .poucaEnergia : .automatico, bateria: nil, tomada: nil)
+    }
+
+    private static func ler() -> Modos? {
+        guard let geral = rodarPmset(["-g"]), let custom = rodarPmset(["-g", "custom"]) else { return nil }
+        let atual = valor(em: geral.components(separatedBy: "\n"))
+        var secao: String?
+        var linhas: [String: [String]] = [:]
+        for linha in custom.components(separatedBy: "\n") {
+            let t = linha.trimmingCharacters(in: .whitespaces)
+            if t.hasSuffix("Power:") { secao = t; continue }
+            if let secao { linhas[secao, default: []].append(linha) }
+        }
+        let bateria = valor(em: linhas["Battery Power:"] ?? [])
+        let tomada = valor(em: linhas["AC Power:"] ?? [])
+        guard atual != nil || bateria != nil || tomada != nil else { return nil }
+        return Modos(atual: atual ?? (ProcessInfo.processInfo.isLowPowerModeEnabled ? .poucaEnergia : .automatico),
+                     bateria: bateria, tomada: tomada)
+    }
+
+    /// "powermode N" (Apple Silicon e Macs recentes) ou "lowpowermode N" (Intel).
+    private static func valor(em linhas: [String]) -> ModoEnergia? {
+        var baixa: ModoEnergia?
+        for linha in linhas {
+            let partes = linha.split(whereSeparator: { $0 == " " || $0 == "\t" })
+            guard partes.count >= 2, let n = Int(partes[1]) else { continue }
+            switch partes[0] {
+            case "powermode": return ModoEnergia(rawValue: n)
+            case "lowpowermode": baixa = n == 1 ? .poucaEnergia : .automatico
+            default: break
+            }
+        }
+        return baixa
+    }
+
+    private static func rodarPmset(_ argumentos: [String]) -> String? {
+        let processo = Process()
+        processo.executableURL = URL(fileURLWithPath: "/usr/bin/pmset")
+        processo.arguments = argumentos
+        let saida = Pipe()
+        processo.standardOutput = saida
+        processo.standardError = FileHandle.nullDevice
+        do { try processo.run() } catch { return nil }
+        let dados = saida.fileHandleForReading.readDataToEndOfFile()
+        processo.waitUntilExit()
+        guard processo.terminationStatus == 0 else { return nil }
+        return String(data: dados, encoding: .utf8)
     }
 }

@@ -88,6 +88,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             _ = a.sentido
             _ = a.mediaRitmo
             _ = a.limiteAlto
+            _ = a.estadoEmPrevia
+            _ = a.formatosSalvos
         } onChange: { [weak self] in
             Task { @MainActor in
                 self?.barra?.redesenhar()
@@ -127,6 +129,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             w.contentMinSize = NSSize(width: min(minimo.width, visivel.width - 40),
                                       height: min(minimo.height, visivel.height - 40))
             w.center()
+            if janela == nil, titulo == "Preferências" {
+                // Fechar a janela é só um orderOut: o onDisappear pode não disparar, então zera a prévia aqui.
+                NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: w, queue: .main) { _ in
+                    MainActor.assumeIsolated { Ajustes.compartilhado.estadoEmPrevia = nil }
+                }
+            }
             janela = w
         }
         NSApp.activate()

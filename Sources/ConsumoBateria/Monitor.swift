@@ -227,6 +227,9 @@ enum Formato {
         v.formatted(.number.precision(.fractionLength(casas)).locale(br))
     }
 
+    /// Inteiro com separador de milhar pt-BR: "1.000".
+    static func inteiro(_ v: Int) -> String { numero(Double(v), casas: 0) }
+
     /// Número com "−" tipográfico: "−13,3", "+2,0".
     static func comSinal(_ v: Double, casas: Int = 1) -> String {
         let n = numero(abs(v), casas: casas)

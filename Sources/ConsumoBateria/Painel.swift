@@ -87,22 +87,43 @@ struct PainelBateria: View {
         VStack(spacing: 14) {
             if let s = situacao {
                 cabecalho(s)
-                ritmoEAnel(s)
-                blocos(s)
-                if s.estado == .carregando { paraOndeVai(s) }
-                graficoRitmo(s)
-                if s.estado == .carregando {
-                    if s.detalhes.cargaOtimizada { avisoOtimizado }
-                } else {
-                    quemMaisGasta(s)
+                ForEach(ajustes.secoesPainel.filter(\.ligada)) { item in
+                    secao(item.secao, s)
                 }
-                linhas(s)
             } else {
                 Text("Não encontrei a bateria deste Mac.")
                     .font(.system(size: 14))
                     .foregroundStyle(secundario)
                     .frame(maxWidth: .infinity, minHeight: 90)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func secao(_ secao: SecaoPainel, _ s: Situacao) -> some View {
+        switch secao {
+        case .ritmoEAnel:
+            ritmoEAnel(s)
+        case .blocos:
+            blocos(s)
+            if s.estado == .carregando { paraOndeVai(s) }
+        case .grafico:
+            grafico(s)
+        case .quemMaisGasta:
+            quemMaisGasta(s)
+        case .alimentacao:
+            if s.leitura.naTomada {
+                cartaoAlimentacao(s)
+                if s.estado == .carregando, s.detalhes.cargaOtimizada { avisoOtimizado }
+            }
+        case .bateria:
+            cartaoBateria(s)
+        case .saude:
+            cartaoSaude(s)
+        case .modoEnergia:
+            cartaoModoEnergia(s)
+        case .atalhos:
+            atalhos
         }
     }
 
@@ -386,35 +407,42 @@ struct PainelBateria: View {
 
     // MARK: Gráfico do ritmo
 
-    private func graficoRitmo(_ s: Situacao) -> some View {
+    private func grafico(_ s: Situacao) -> some View {
         let barras = BarraRitmo.agrupar(s.serie, fim: s.serie.last?.data ?? s.leitura.data, minutos: periodo.minutos)
         let carregando = s.estado == .carregando
-        let teto = max(carregando ? 45 : 18, (barras.map { abs($0.valor) }.max() ?? 0) * 1.1)
+        let modoCarga = ajustes.modoGrafico == .carga
+        let teto = modoCarga ? 100 : max(carregando ? 45 : 18, (barras.map { abs($0.valor) }.max() ?? 0) * 1.1)
         let fim = s.serie.last?.data ?? s.leitura.data
         let inicio = fim.addingTimeInterval(-Double(periodo.minutos) * 60)
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
-                RotuloSecao("Ritmo")
+                chips(ModoGrafico.allCases, selecao: ajustes.modoGrafico, titulo: \.titulo) { ajustes.modoGrafico = $0 }
                 Spacer()
-                HStack(spacing: 4) {
-                    ForEach(PeriodoGrafico.allCases) { p in
-                        Button { periodo = p } label: {
-                            Text(p.titulo)
-                                .font(.system(size: 12, weight: .semibold))
-                                .padding(.horizontal, 9)
-                                .frame(height: 24)
-                                .foregroundStyle(p == periodo ? estilo.primeiroPlanoSelecionado : Color.primary.opacity(0.75))
-                                .background(FundoSelecionavel(selecionado: p == periodo, capsula: true))
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityAddTraits(p == periodo ? .isSelected : [])
-                    }
-                }
+                chips(PeriodoGrafico.allCases, selecao: periodo, titulo: \.titulo) { periodo = $0 }
             }
             Cartao(padding: 12) {
-                GraficoBarras(barras: barras, carregando: carregando, teto: teto,
-                              media: carregando ? nil : s.ritmoMedio, inicio: inicio, fim: fim,
+                GraficoBarras(barras: barras, carregando: carregando, modoCarga: modoCarga, teto: teto,
+                              media: carregando || modoCarga ? nil : s.ritmoMedio, inicio: inicio, fim: fim,
                               marcas: marcas(inicio: inicio, fim: fim))
+            }
+        }
+    }
+
+    private func chips<V: Hashable>(_ opcoes: [V], selecao: V, titulo: KeyPath<V, String>,
+                                    escolher: @escaping (V) -> Void) -> some View {
+        HStack(spacing: 4) {
+            ForEach(opcoes, id: \.self) { o in
+                let marcado = o == selecao
+                Button { escolher(o) } label: {
+                    Text(o[keyPath: titulo])
+                        .font(.system(size: 12, weight: .semibold))
+                        .padding(.horizontal, 9)
+                        .frame(height: 24)
+                        .foregroundStyle(marcado ? estilo.primeiroPlanoSelecionado : Color.primary.opacity(0.75))
+                        .background(FundoSelecionavel(selecionado: marcado, capsula: true))
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(marcado ? .isSelected : [])
             }
         }
     }
@@ -444,8 +472,8 @@ struct PainelBateria: View {
                 Text("estimado").font(.system(size: 11)).foregroundStyle(Color.primary.opacity(0.55))
             }
             Cartao(padding: 12) {
-                if s.apps.isEmpty {
-                    Text("Medindo…")
+                if appsVisiveis(s.apps).isEmpty {
+                    Text("Nenhum app gastando muito")
                         .font(.system(size: 14))
                         .foregroundStyle(secundario)
                         .padding(.vertical, 7)
@@ -465,6 +493,7 @@ struct PainelBateria: View {
     private func appsVisiveis(_ apps: [ConsumoApp]) -> [ConsumoApp] {
         let sistema = apps.last { $0.id == "sistema" }
         let normais = apps.filter { $0.id != "sistema" }
+        if normais.isEmpty { return [] }
         return Array(normais.prefix(3)) + (sistema.map { [$0] } ?? [])
     }
 
@@ -522,41 +551,172 @@ struct PainelBateria: View {
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(estilo.bordaCartao, lineWidth: 1))
     }
 
-    private func linhas(_ s: Situacao) -> some View {
-        var itens: [(String, String)] = [
-            ("Corrente", Formato.comSinal(Double(s.leitura.correnteMa), casas: 0) + " mA"),
-            ("Tensão", Formato.numero(Double(s.leitura.tensaoMv) / 1000, casas: 2) + " V"),
-        ]
-        if let t = s.detalhes.temperaturaC { itens.append(("Temperatura", Formato.numero(t, casas: 0) + " °C")) }
-        if let saude = s.saudePercentual {
-            var v = Formato.percentual(saude)
-            if let c = s.detalhes.ciclos { v += " · \(c) ciclos" }
-            itens.append(("Saúde", v))
-        } else if let c = s.detalhes.ciclos {
-            itens.append(("Saúde", "\(c) ciclos"))
-        }
-        if s.estado != .carregando {
-            itens.append(("Modo de energia", s.detalhes.poucaEnergia ? "Pouca Energia" : "Normal"))
-        }
-        return VStack(spacing: 0) {
-            ForEach(Array(itens.enumerated()), id: \.offset) { i, item in
-                HStack {
-                    Text(item.0).foregroundStyle(Color.primary.opacity(0.68))
-                    Spacer()
-                    Text(item.1).monospacedDigit()
-                }
-                .font(.system(size: 14))
-                .padding(.vertical, 7)
-                .overlay(alignment: .bottom) {
-                    if i < itens.count - 1 { Rectangle().fill(Color.primary.opacity(0.07)).frame(height: 1) }
+    // MARK: Cartões de dados
+
+    /// Cartão com título em caixa alta na cor de destaque e linhas rótulo / valor.
+    private func cartaoDados<Extra: View>(_ titulo: String, _ itens: [(String, String)],
+                                          @ViewBuilder cabeca: () -> Extra = { EmptyView() }) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(titulo)
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(0.9)
+                .textCase(.uppercase)
+                .foregroundStyle(estilo.destaque)
+            HStack(alignment: .center, spacing: 14) {
+                cabeca()
+                VStack(spacing: 0) {
+                    ForEach(Array(itens.enumerated()), id: \.offset) { i, item in
+                        HStack(spacing: 8) {
+                            Text(item.0).foregroundStyle(Color.primary.opacity(0.68))
+                            Spacer(minLength: 4)
+                            Text(item.1).monospacedDigit().lineLimit(1).minimumScaleFactor(0.8)
+                        }
+                        .font(.system(size: 14))
+                        .padding(.vertical, 6)
+                        .overlay(alignment: .bottom) {
+                            if i < itens.count - 1 { Rectangle().fill(Color.primary.opacity(0.07)).frame(height: 1) }
+                        }
+                    }
                 }
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 4)
-        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(estilo.cartao))
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(estilo.bordaCartao, lineWidth: 1))
+    }
+
+    private func cartaoAlimentacao(_ s: Situacao) -> some View {
+        var itens: [(String, String)] = []
+        if let w = s.detalhes.adaptadorW {
+            var v = Formato.numero(w, casas: 0) + " W"
+            // O nome do sistema costuma repetir a potência ("Carregador USB-C de 96 W"); aí basta o número.
+            if let nome = s.detalhes.adaptadorNome, !nome.isEmpty, !nome.contains(" W") { v += " · " + nome }
+            itens.append(("Carregador", v))
+        } else if let nome = s.detalhes.adaptadorNome, !nome.isEmpty {
+            itens.append(("Carregador", nome))
+        }
+        if let entrada = s.detalhes.entradaSistemaW {
+            itens.append(("Entrando no Mac", Formato.watts(entrada)))
+        }
+        if itens.isEmpty { itens.append(("Carregador", "Sem informação")) }
+        return cartaoDados("Alimentação", itens)
+    }
+
+    private func cartaoBateria(_ s: Situacao) -> some View {
+        var itens: [(String, String)] = [
+            ("Potência", Formato.comSinal(s.leitura.watts, casas: 1) + " W"),
+            ("Corrente", Formato.comSinal(Double(s.leitura.correnteMa) / 1000, casas: 2) + " A"),
+            ("Tensão", Formato.numero(Double(s.leitura.tensaoMv) / 1000, casas: 2) + " V"),
+        ]
+        if let t = s.detalhes.temperaturaC { itens.append(("Temperatura", Formato.numero(t, casas: 1) + " °C")) }
+        return cartaoDados("Bateria", itens)
+    }
+
+    private func cartaoSaude(_ s: Situacao) -> some View {
+        var itens: [(String, String)] = []
+        if let c = s.detalhes.ciclos {
+            var v = Formato.inteiro(c)
+            if let p = s.detalhes.ciclosProjeto { v += " de " + Formato.inteiro(p) }
+            itens.append(("Ciclos", v))
+        }
+        if let c = s.detalhes.condicao { itens.append(("Condição", c)) }
+        if let f = s.detalhes.capacidadeFabricaMah { itens.append(("Capacidade de fábrica", Formato.inteiro(f) + " mAh")) }
+        if s.leitura.capacidadeMah > 0 { itens.append(("Capacidade cheia hoje", Formato.inteiro(s.leitura.capacidadeMah) + " mAh")) }
+        let saude = s.saudePercentual
+        return cartaoDados("Saúde", itens) {
+            if let saude { anelSaude(saude) }
+        }
+    }
+
+    private func anelSaude(_ saude: Double) -> some View {
+        let fracao = min(max(saude / 100, 0), 1)
+        return ZStack {
+            Circle().stroke(Color.primary.opacity(0.10), lineWidth: 6)
+            Circle().trim(from: 0, to: fracao)
+                .stroke(estilo.destaque, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            Text(Formato.percentual(saude))
+                .font(.system(size: 15, weight: .bold))
+                .monospacedDigit()
+        }
+        .padding(3)
+        .frame(width: 64, height: 64)
+        .accessibilityLabel("Saúde da bateria \(Formato.percentual(saude))")
+    }
+
+    private func cartaoModoEnergia(_ s: Situacao) -> some View {
+        let d = s.detalhes
+        let atual = d.modoEnergia?.titulo ?? (d.poucaEnergia ? ModoEnergia.poucaEnergia.titulo : ModoEnergia.automatico.titulo)
+        let porFonte = [d.modoEnergiaBateria.map { "Na bateria: " + $0.titulo },
+                        d.modoEnergiaTomada.map { "Na tomada: " + $0.titulo }].compactMap { $0 }
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("Modo de energia")
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(0.9)
+                .textCase(.uppercase)
+                .foregroundStyle(estilo.destaque)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(atual).font(.system(size: 17, weight: .semibold))
+                if !porFonte.isEmpty {
+                    Text(porFonte.joined(separator: " · "))
+                        .font(.system(size: 13))
+                        .foregroundStyle(secundario)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(estilo.cartao))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(estilo.bordaCartao, lineWidth: 1))
+    }
+
+    // MARK: Atalhos
+
+    private struct Atalho: Identifiable {
+        var id: String { nome }
+        var nome: String
+        var caminho: String
+        var url: URL?
+    }
+
+    private static let atalhosPossiveis: [Atalho] = [
+        Atalho(nome: "Monitor de Atividade", caminho: "/System/Applications/Utilities/Activity Monitor.app"),
+        Atalho(nome: "Console", caminho: "/System/Applications/Utilities/Console.app"),
+        Atalho(nome: "Terminal", caminho: "/System/Applications/Utilities/Terminal.app"),
+        Atalho(nome: "Ajustes de Bateria", caminho: "/System/Applications/System Settings.app",
+               url: URL(string: "x-apple.systempreferences:com.apple.Battery-Settings.extension")),
+    ]
+
+    private var atalhos: some View {
+        let presentes = Self.atalhosPossiveis.filter { FileManager.default.fileExists(atPath: $0.caminho) }
+        return HStack(spacing: 18) {
+            ForEach(presentes) { a in
+                Button { abrir(a) } label: {
+                    Image(nsImage: NSWorkspace.shared.icon(forFile: a.caminho))
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain)
+                .help(a.nome)
+                .accessibilityLabel(a.nome)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 28)
+    }
+
+    private func abrir(_ a: Atalho) {
+        if let url = a.url {
+            NSWorkspace.shared.open(url)
+        } else {
+            NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: a.caminho),
+                                               configuration: NSWorkspace.OpenConfiguration())
+        }
     }
 
     private var rodape: some View {
@@ -596,6 +756,9 @@ private struct BarraRitmo {
     var inicio: Date
     var duracao: TimeInterval
     var valor: Double
+    /// Média da % de bateria na coluna e se alguma leitura dela era carregando (gráfico de carga).
+    var percentual: Double = 0
+    var carregando = false
 
     /// Reparte os pontos dos últimos `minutos` em até 30 colunas, pela média.
     static func agrupar(_ serie: [PontoMinuto], fim: Date, minutos: Int) -> [BarraRitmo] {
@@ -605,15 +768,21 @@ private struct BarraRitmo {
         let inicio = fim.addingTimeInterval(-janela)
         var somas = [Double](repeating: 0, count: n)
         var contagens = [Int](repeating: 0, count: n)
+        var percentuais = [Double](repeating: 0, count: n)
+        var cargas = [Int](repeating: 0, count: n)
         for p in serie where p.data >= inicio && p.data <= fim {
             let i = min(n - 1, Int(p.data.timeIntervalSince(inicio) / tamanho))
             somas[i] += p.ritmo
+            percentuais[i] += p.percentual
+            if p.carregando { cargas[i] += 1 }
             contagens[i] += 1
         }
         return (0..<n).compactMap { i in
             guard contagens[i] > 0 else { return nil }
             return BarraRitmo(inicio: inicio.addingTimeInterval(Double(i) * tamanho), duracao: tamanho,
-                              valor: somas[i] / Double(contagens[i]))
+                              valor: somas[i] / Double(contagens[i]),
+                              percentual: percentuais[i] / Double(contagens[i]),
+                              carregando: cargas[i] * 2 > contagens[i])
         }
     }
 }
@@ -623,6 +792,7 @@ private struct GraficoBarras: View {
     @Environment(\.estilo) private var estilo
     let barras: [BarraRitmo]
     let carregando: Bool
+    let modoCarga: Bool
     let teto: Double
     let media: Double?
     let inicio: Date
@@ -640,7 +810,7 @@ private struct GraficoBarras: View {
     private var itens: [Item] {
         barras.enumerated().map { i, b in
             Item(id: i, inicio: b.inicio, fim: b.inicio.addingTimeInterval(b.duracao * 0.88),
-                 altura: abs(b.valor), cor: cor(b, i))
+                 altura: modoCarga ? b.percentual : abs(b.valor), cor: cor(b, i))
         }
     }
 
@@ -679,6 +849,7 @@ private struct GraficoBarras: View {
     }
 
     private func cor(_ b: BarraRitmo, _ i: Int) -> Color {
+        if modoCarga { return b.carregando ? estilo.destaque : Color.primary.opacity(0.35) }
         if carregando {
             if b.valor < 0 { return Color.primary.opacity(0.28) }
             return i >= barras.count - 3 ? estilo.destaque : estilo.destaque.opacity(0.6)
