@@ -231,12 +231,27 @@ final class ControladorModulos: NSObject, NSPopoverDelegate {
         }
     }
 
+    /// Painel pedido enquanto o anterior ainda fecha: abre no popoverDidClose. Abrir durante a animação de fechar
+    /// fazia o macOS posicionar o popover errado (às vezes na outra tela) e o didClose atrasado zerava os painéis abertos.
+    private var pendente: (tela: Modulo?, botao: NSStatusBarButton)?
+    private var fechando = false
+
     private func alternarPopover(tela: Modulo?, botao: NSStatusBarButton) {
-        if popover.isShown {
-            let mesmo = botaoAncora === botao
+        let mesmo = botaoAncora === botao
+        if popover.isShown && !fechando {
+            pendente = mesmo ? nil : (tela, botao)
             popover.performClose(nil)
-            if mesmo { return }
+            return
         }
+        if fechando {
+            // Clique no mesmo ícone enquanto fecha (o "transient" já fechou pelo clique fora): só fecha.
+            pendente = mesmo ? nil : (tela, botao)
+            return
+        }
+        mostrar(tela: tela, botao: botao)
+    }
+
+    private func mostrar(tela: Modulo?, botao: NSStatusBarButton) {
         navegacao.tela = tela
         botaoAncora = botao
         TelaDoClique.compartilhada.usar(botao)
@@ -247,6 +262,7 @@ final class ControladorModulos: NSObject, NSPopoverDelegate {
         popover.contentViewController?.view.layoutSubtreeIfNeeded()
         popover.show(relativeTo: botao.bounds, of: botao, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
+        vigia.ligar { [weak self] in self?.popover.performClose(nil) }
         atualizarAbertos()
     }
 
@@ -266,10 +282,23 @@ final class ControladorModulos: NSObject, NSPopoverDelegate {
         }
     }
 
+    func popoverWillClose(_ notification: Notification) {
+        fechando = true
+    }
+
+    private let vigia = VigiaCliqueFora()
+
     func popoverDidClose(_ notification: Notification) {
+        vigia.desligar()
+        fechando = false
         monitor.paineisAbertos = []
         monitor.geralAberto = false
         botaoAncora = nil
+        if let p = pendente {
+            pendente = nil
+            // Próxima volta do run loop: a janela do popover anterior termina de sair antes de reabrir.
+            DispatchQueue.main.async { [weak self] in self?.mostrar(tela: p.tela, botao: p.botao) }
+        }
     }
 
     // MARK: Ações dos painéis

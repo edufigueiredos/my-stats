@@ -182,7 +182,7 @@ enum RenderizadorBarra {
 // MARK: - Controlador do NSStatusItem
 
 @MainActor
-final class ControladorBarra: NSObject {
+final class ControladorBarra: NSObject, NSPopoverDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let popover = NSPopover()
     /// Atualização pelo GitHub; nil no build de desenvolvimento.
@@ -214,6 +214,7 @@ final class ControladorBarra: NSObject {
         self.abrirPreferencias = abrirPreferencias
         super.init()
         popover.behavior = .transient
+        popover.delegate = self
         popover.animates = true
         popover.contentViewController = NSHostingController(rootView: conteudoPainel())
         if let botao = statusItem.button {
@@ -294,8 +295,13 @@ final class ControladorBarra: NSObject {
             popover.contentViewController?.view.layoutSubtreeIfNeeded()
             popover.show(relativeTo: botao.bounds, of: botao, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
+            vigia.ligar { [weak self] in self?.popover.performClose(nil) }
         }
     }
+
+    private let vigia = VigiaCliqueFora()
+
+    func popoverDidClose(_ notification: Notification) { vigia.desligar() }
 
     private func mostrarMenu() {
         let menu = NSMenu()
