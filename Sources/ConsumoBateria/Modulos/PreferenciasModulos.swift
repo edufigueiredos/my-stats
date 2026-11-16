@@ -679,7 +679,9 @@ struct PaginaModuloPrefs: View {
                     .font(.system(size: 12)).foregroundStyle(.secondary)
             }
             previaDaPeca(item, linha: linha)
-            if !paraFoto, Self.pecasComTexto.contains(item.peca) {
+            if item.peca == .texto {
+                textoLivre(item)
+            } else if !paraFoto, Self.pecasComTexto.contains(item.peca) {
                 linhaAjuste("Texto") {
                     TextField(item.peca == .texto ? "{valor}" : "Padrão", text: Binding(
                         get: { item.texto ?? "" },
@@ -749,6 +751,49 @@ struct PaginaModuloPrefs: View {
             f.medio = max(0, f.medio + medio)
             f.alto = max(f.medio, f.alto + alto)
             c.faixa = f
+        }
+    }
+
+    /// Texto livre com os marcadores do módulo, como o da bateria: um toque insere o marcador no fim do texto.
+    private func textoLivre(_ item: ItemPecaModulo) -> some View {
+        let modelo = item.texto ?? ""
+        let limite = ItemPecaModulo.limiteModelo
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("Texto").font(.system(size: 13)).foregroundStyle(Color.primary.opacity(0.7))
+            Group {
+                if paraFoto {
+                    Text(modelo.isEmpty ? "{valor}" : modelo)
+                        .foregroundStyle(modelo.isEmpty ? Color.secondary : Color.primary)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    TextField("{valor}", text: Binding(
+                        get: { item.texto ?? "" },
+                        set: { novo in mudarItem { $0.texto = String(novo.prefix(limite)) } }))
+                        .textFieldStyle(.plain)
+                }
+            }
+            .font(.system(size: 13, weight: .semibold))
+            .padding(.horizontal, 8).padding(.vertical, 6)
+            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(estilo.ladrilho))
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 6)], alignment: .leading, spacing: 6) {
+                ForEach(TextoPecaModulo.marcadores(modulo), id: \.marcador) { m in
+                    Button {
+                        mudarItem { $0.texto = String(((($0.texto ?? "").isEmpty ? "" : ($0.texto ?? "") + " ") + m.marcador).prefix(limite)) }
+                    } label: {
+                        Text(m.titulo).font(.system(size: 11, weight: .semibold))
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 5)
+                            .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(estilo.ladrilho))
+                    }
+                    .buttonStyle(.plain)
+                    .help(m.marcador)
+                    .accessibilityLabel("Inserir \(m.titulo)")
+                }
+            }
+            Text("Toque num valor para inserir no texto; escreva o que quiser em volta (ex.: \"CPU {valor} · {temp}\").")
+                .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
     }
 

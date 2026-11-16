@@ -84,7 +84,8 @@ final class LeitorSensores {
 
         r.ventoinhas = lerVentoinhas()
         if let w = smc.ler("PSTR"), w > 0, w < 1000 { r.sistemaW = w } else { r.sistemaW = entradaSistemaW }
-        if let w = smc.ler("PDTR"), w >= 0, w < 200 { r.telaW = w }
+        // Sem chave da tela: PDTR, que parecia ser a tela, é a potência que entra pelo carregador (anda junto com PSTR,
+        // 24 a 26 W com o Mac parado e a tampa fechada). Sem uma chave confiável, a tela fica no "resto do Mac".
         r.carregadorW = carregadorW
         let vazio = r.cpuC == nil && r.gpuC == nil && r.todas.isEmpty && r.ventoinhas.isEmpty && r.sistemaW == nil
         return vazio ? nil : r
@@ -102,6 +103,13 @@ final class LeitorSensores {
         }
         let v = (chavesSMC[prefixo] ?? []).compactMap { smc.ler($0) }.filter { $0 > 5 && $0 <= 130 }
         return v.isEmpty ? nil : v.reduce(0, +) / Double(v.count)
+    }
+
+    /// Só para o diagnóstico (--sensores): todas as chaves de potência (P…) com valor diferente de zero.
+    func potenciasSMC() -> [(chave: String, watts: Double)] {
+        smc.chaves().filter { $0.hasPrefix("P") }.compactMap { k in
+            smc.ler(k).flatMap { $0.isFinite && abs($0) > 0.05 && abs($0) < 1000 ? (k, $0) : nil }
+        }
     }
 
     private func lerVentoinhas() -> [Ventoinha] {

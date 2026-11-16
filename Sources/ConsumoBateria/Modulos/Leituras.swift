@@ -360,7 +360,7 @@ struct LeiturasModulos: Sendable, Equatable {
                 Ventoinha(id: 0, nome: "Esquerda", rpm: 4820, minimoRpm: 1200, maximoRpm: 5900),
                 Ventoinha(id: 1, nome: "Direita", rpm: 4760, minimoRpm: 1200, maximoRpm: 5900),
             ],
-            sistemaW: 100, telaW: 9, carregadorW: 140)
+            sistemaW: 100, carregadorW: 140)
         let energia = EnergiaSoC(cpuW: 38, gpuW: 21, gpuMHz: 1180, gpuMaxMHz: 1440)
         let processos = ProcessosModulos(
             cpu: [

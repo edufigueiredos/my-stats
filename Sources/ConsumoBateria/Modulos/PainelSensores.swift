@@ -90,9 +90,11 @@ struct PainelSensores: View {
         let resto = sistema.map { max($0 - conhecidas, 0) }
         let corCPU = estilo.destaque, corGPU = Color(hex: "#F7E3B5"), corTela = Color(hex: "#9B7A3C"), corResto = Color.white.opacity(0.32)
         // Sem potência da CPU (M5), ela entra no resto em vez de aparecer como "—".
-        let itens: [(nome: String, w: Double?, cor: Color)] = cpu == nil
+        // A tela só aparece com leitura própria; sem ela, entra no resto.
+        let itens: [(nome: String, w: Double?, cor: Color)] = (cpu == nil
             ? [("GPU", gpu, corGPU), ("Tela", tela, corTela), ("CPU e resto do Mac", resto, corResto)]
-            : [("CPU", cpu, corCPU), ("GPU", gpu, corGPU), ("Tela", tela, corTela), ("Resto do Mac", resto, corResto)]
+            : [("CPU", cpu, corCPU), ("GPU", gpu, corGPU), ("Tela", tela, corTela), ("Resto do Mac", resto, corResto)])
+            .filter { $0.nome != "Tela" || tela != nil }
         func texto(_ w: Double?) -> String { w.map { Formato.numero($0, casas: $0 < 10 ? 1 : 0) + " W" } ?? Formato.semDado }
         let partes: [(fracao: Double, cor: Color)] = itens.compactMap { item in
             guard let w = item.w, let s = sistema, s > 0 else { return nil }

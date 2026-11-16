@@ -41,8 +41,9 @@ enum Entrada {
             func t(_ v: Double?) -> String { v.map { String(format: "%.1f °C", $0) } ?? "—" }
             print("CPU \(t(r?.cpuC)) · GPU \(t(r?.gpuC)) · SSD \(t(r?.ssdC)) · Bateria \(t(r?.bateriaC))")
             for v in r?.ventoinhas ?? [] {
-                print("\(v.nome): \(Formato.rpm(v.rpm)) · \(v.fracao.map { Formato.percentual($0 * 100) } ?? "—") (máx. \(v.maximoRpm.map(Formato.rpm) ?? "—"))")
+                print("\(v.nome): \(Formato.rpm(v.rpm)) · \(v.fracao.map { Formato.percentual($0 * 100) } ?? "—") (mín. \(v.minimoRpm.map(Formato.rpm) ?? "—"), máx. \(v.maximoRpm.map(Formato.rpm) ?? "—"))")
             }
+            print("Potências do SMC: " + leitor.potenciasSMC().map { String(format: "%@ %.1f", $0.chave, $0.watts) }.joined(separator: " · "))
             let soc = LeitorEnergiaSoC()
             for _ in 0..<3 {
                 RunLoop.main.run(until: Date().addingTimeInterval(2))

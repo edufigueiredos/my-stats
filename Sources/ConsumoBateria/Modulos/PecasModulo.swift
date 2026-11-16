@@ -99,6 +99,8 @@ struct ItemPecaModulo: Codable, Sendable, Equatable, Identifiable {
     var sufixo: String?
 
     static let limiteTexto = 24
+    /// O modelo do Texto livre pode ser mais longo: os marcadores ocupam mais letras do que o valor que mostram.
+    static let limiteModelo = 60
 
     init(_ peca: PecaModulo, id: UUID = UUID(), tamanho: Double? = nil, negrito: Bool? = nil, casas: Int? = nil,
          corHex: String? = nil, porFaixa: Bool? = nil, deslocamentoY: Double? = nil, texto: String? = nil,
@@ -280,7 +282,7 @@ struct ConfigModulo: Codable, Sendable, Equatable {
             n.deslocamentoY = i.deslocamentoY.map { limitar($0, -3, 3) }
             n.corHex = hexOuNil(i.corHex)
             n.casas = i.casas.map { min(max($0, 0), 2) }
-            n.texto = cortar(i.texto)
+            n.texto = i.peca == .texto ? i.texto.map { String($0.prefix(ItemPecaModulo.limiteModelo)) } : cortar(i.texto)
             n.prefixo = cortar(i.prefixo)
             n.sufixo = cortar(i.sufixo)
             return n
@@ -589,6 +591,35 @@ enum TextoPecaModulo {
         return seta + " " + Formato.velocidade(bps)
     }
 
+    /// Marcadores do Texto livre. Cada um vira o texto de uma peça do módulo, com as casas da peça Texto livre:
+    /// "{valor} · {temp}" na CPU vira "23% · 48°". Valem em qualquer módulo; o editor oferece só os do módulo.
+    static let marcadores: [(marcador: String, peca: PecaModulo)] = [
+        ("{rotulo}", .rotulo), ("{valor}", .valor), ("{apps}", .apps), ("{sistema}", .sistema),
+        ("{temp}", .temperatura), ("{tempgpu}", .tempGPU), ("{watts}", .potencia), ("{carga}", .cargaMedia),
+        ("{memoria}", .memoriaGPU), ("{usada}", .usada), ("{pressao}", .pressao), ("{swap}", .swap),
+        ("{livre}", .livre), ("{leitura}", .leitura), ("{escrita}", .escrita),
+        ("{latencia}", .latencia), ("{baixando}", .baixando), ("{enviando}", .enviando),
+        ("{rpm}", .ventoinha), ("{ventoinha}", .ventoinhaPct),
+        ("{data}", .data), ("{compromisso}", .proximoCompromisso), ("{hora}", .horario),
+    ]
+
+    /// Marcadores que o editor oferece no módulo, na ordem das peças dele.
+    static func marcadores(_ m: Modulo) -> [(marcador: String, titulo: String)] {
+        PecaModulo.paleta(m).compactMap { p in
+            marcadores.first(where: { $0.peca == p }).map { ($0.marcador, p.titulo(em: m)) }
+        }
+    }
+
+    /// Troca os marcadores pelos valores atuais; marcador desconhecido fica como está.
+    static func expandir(_ modelo: String, modulo m: Modulo, leituras l: LeiturasModulos, casas: Int?) -> String {
+        var t = modelo
+        for (marcador, peca) in marcadores where t.contains(marcador) {
+            let valor = texto(ItemPecaModulo(peca, casas: casas), modulo: m, leituras: l) ?? Formato.semDado
+            t = t.replacingOccurrences(of: marcador, with: valor)
+        }
+        return t
+    }
+
     /// Texto da peça; nil nas peças que se desenham (gráfico, ícone, anel, ponto, núcleos).
     static func texto(_ item: ItemPecaModulo, modulo m: Modulo, leituras l: LeiturasModulos) -> String? {
         let casas = item.casas
@@ -599,15 +630,7 @@ enum TextoPecaModulo {
         case .valor: base = valorBase(m, l, casas: casas)
         case .separador: base = item.texto ?? "·"
         case .horario: base = Formato.horario(l.data)
-        case .texto:
-            let valor = valorBase(m, l, casas: casas)
-            let temp = graus(m == .gpu ? l.sensores?.gpuC : l.sensores?.cpuC, casas ?? 0)
-            base = (item.texto ?? "")
-                .replacingOccurrences(of: "{valor}", with: valor)
-                .replacingOccurrences(of: "{rotulo}", with: m.rotuloCurto)
-                .replacingOccurrences(of: "{temp}", with: temp)
-                .replacingOccurrences(of: "{hora}", with: Formato.horario(l.data))
-                .replacingOccurrences(of: "{data}", with: FormatoData.dataBarra(l.data))
+        case .texto: base = expandir(item.texto ?? "", modulo: m, leituras: l, casas: casas)
         case .apps: base = percentual(l.cpu?.usuario, casas ?? 0)
         case .sistema: base = percentual(l.cpu?.sistema, casas ?? 0)
         case .temperatura: base = graus(m == .gpu ? l.sensores?.gpuC : l.sensores?.cpuC, casas ?? 0)

@@ -386,6 +386,17 @@ private extension Foto {
                                 alternarAbrirAoIniciar: { _ in }, paraFoto: true,
                                 pecaSelecionadaInicial: (.cima, .data))
         }, "preferencias-modulos-calendario", em: url)
+        // Texto livre com os marcadores do módulo (GPU).
+        todos.atualizarConfig(.gpu) { c in
+            c.pecas = [ItemPecaModulo(.texto, texto: "GPU {valor} · {temp} · {watts}")]
+            c.pecasBaixo = []
+        }
+        png(RaizTematica(temaFixo: .gold) {
+            PreferenciasComMenu(ajustes: ajustesBateria, ajustesModulos: todos, navegacao: NavegacaoPreferencias(pagina: .modulo(.gpu)),
+                                leituras: leituras, series: series, situacao: .exemplo(.parado), abrirAoIniciar: true,
+                                alternarAbrirAoIniciar: { _ in }, paraFoto: true,
+                                pecaSelecionadaInicial: (.cima, .texto))
+        }, "preferencias-modulos-texto-livre", em: url)
     }
 }
 
