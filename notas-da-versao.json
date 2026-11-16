@@ -17,5 +17,9 @@
   "0.2.3": [
     "Clicar fora do app, na área de trabalho ou em outra janela, fecha o painel aberto.",
     "Abrir outro painel com um já aberto não faz mais ele aparecer na outra tela."
+  ],
+  "0.2.4": [
+    "Texto livre em todos os módulos: escreva o que quiser na barra e toque nos valores de cada módulo para inseri-los (ex.: \"GPU {valor} · {temp} · {watts}\").",
+    "Sensores: a \"Tela\" saiu da divisão de energia. O número era a potência que entra pelo carregador, não a da tela."
   ]
 }
