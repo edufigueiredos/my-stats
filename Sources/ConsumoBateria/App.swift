@@ -43,7 +43,10 @@ enum Entrada {
             for v in r?.ventoinhas ?? [] {
                 print("\(v.nome): \(Formato.rpm(v.rpm)) · \(v.fracao.map { Formato.percentual($0 * 100) } ?? "—") (mín. \(v.minimoRpm.map(Formato.rpm) ?? "—"), máx. \(v.maximoRpm.map(Formato.rpm) ?? "—"))")
             }
-            print("Potências do SMC: " + leitor.potenciasSMC().map { String(format: "%@ %.1f", $0.chave, $0.watts) }.joined(separator: " · "))
+            for (nome, prefixo) in [("Potências", "P"), ("Ventoinhas", "F")] {
+                print("\(nome) do SMC: " + leitor.chavesSMC(prefixo: prefixo).map { String(format: "%@ %.1f", $0.chave, $0.watts) }
+                    .joined(separator: " · "))
+            }
             let soc = LeitorEnergiaSoC()
             for _ in 0..<3 {
                 RunLoop.main.run(until: Date().addingTimeInterval(2))

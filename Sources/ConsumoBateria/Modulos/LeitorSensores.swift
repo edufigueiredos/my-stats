@@ -105,10 +105,10 @@ final class LeitorSensores {
         return v.isEmpty ? nil : v.reduce(0, +) / Double(v.count)
     }
 
-    /// Só para o diagnóstico (--sensores): todas as chaves de potência (P…) com valor diferente de zero.
-    func potenciasSMC() -> [(chave: String, watts: Double)] {
-        smc.chaves().filter { $0.hasPrefix("P") }.compactMap { k in
-            smc.ler(k).flatMap { $0.isFinite && abs($0) > 0.05 && abs($0) < 1000 ? (k, $0) : nil }
+    /// Só para o diagnóstico (--sensores): as chaves com o prefixo (P = potência, F = ventoinhas) e valor diferente de zero.
+    func chavesSMC(prefixo: String) -> [(chave: String, watts: Double)] {
+        smc.chaves().filter { $0.hasPrefix(prefixo) }.compactMap { k in
+            smc.ler(k).flatMap { $0.isFinite && abs($0) > 0.05 && abs($0) < (prefixo == "F" ? 20000 : 1000) ? (k, $0) : nil }
         }
     }
 
