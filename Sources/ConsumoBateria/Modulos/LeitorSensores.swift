@@ -3,8 +3,9 @@ import IOKit
 
 /// Temperaturas (IOHIDEventSystemClient, API privada por dlsym) e ventoinhas/potência (SMC). Sem root.
 /// Qualquer símbolo ou chave ausente vira nil; nunca derruba o app.
-@MainActor
-final class LeitorSensores {
+/// Sem ator: o monitor usa um na thread principal e o controle das ventoinhas usa outro na fila dele (cada instância
+/// fica numa thread só).
+final class LeitorSensores: @unchecked Sendable {
     private typealias Ponteiro = UnsafeMutableRawPointer
     private typealias FCriar = @convention(c) (CFAllocator?) -> Ponteiro?
     private typealias FFiltrar = @convention(c) (Ponteiro, CFDictionary) -> Int32

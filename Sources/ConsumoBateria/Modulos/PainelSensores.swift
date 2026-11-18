@@ -11,11 +11,13 @@ struct PainelSensores: View {
     var avisoDica: String? = nil
     var alturaMaxima: CGFloat? = nil
     var todosAbertos = false
+    var controle: ControleVentoinhas = .compartilhado
 
     @State private var verTodos: Bool
 
     init(leituras: LeiturasModulos, series: SeriesModulos, acoes: AcoesModulo, avisoTitulo: String? = nil, avisoDica: String? = nil,
-         alturaMaxima: CGFloat? = nil, todosAbertos: Bool = false) {
+         alturaMaxima: CGFloat? = nil, todosAbertos: Bool = false, controle: ControleVentoinhas = .compartilhado) {
+        self.controle = controle
         self.leituras = leituras
         self.series = series
         self.acoes = acoes
@@ -47,6 +49,7 @@ struct PainelSensores: View {
 
             if let fans = sensores?.ventoinhas, !fans.isEmpty {
                 CabecalhoSecao("Ventoinhas").padding(.top, 2)
+                ControleVentoinhasPainel(controle: controle, fans: fans, sensores: sensores, editarCurva: acoes.ventoinhas)
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
                     ForEach(fans) { v in cartaoVentoinha(v) }
                 }
@@ -213,8 +216,11 @@ struct PainelSensores: View {
                 AnelModulo(fracao: v.fracao ?? 0, lado: 32, espessura: 4, cor: estilo.destaque, centro: nil, sub: nil)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(v.nome).font(.system(size: 12)).foregroundStyle(Color.primary.opacity(0.62)).lineLimit(1)
-                    Text(Formato.rpm(v.rpm)).font(.system(size: 17, weight: .bold)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.8)
-                    if let f = v.fracao {
+                    Text(v.rpm < 1 ? "Parada" : Formato.rpm(v.rpm))
+                        .font(.system(size: 17, weight: .bold)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.8)
+                    if v.rpm < 1 {
+                        Text("0 rpm").font(.system(size: 11)).foregroundStyle(Color.primary.opacity(0.55))
+                    } else if let f = v.fracao {
                         Text("\(Formato.percentual(f * 100)) da rotação máxima")
                             .font(.system(size: 11)).monospacedDigit().foregroundStyle(Color.primary.opacity(0.55)).lineLimit(1).minimumScaleFactor(0.8)
                     }
@@ -239,5 +245,146 @@ struct PainelSensores: View {
                 Spacer(minLength: 0)
             }
         }
+    }
+}
+
+/// Troca de modo e o controle do modo escolhido, no painel Sensores (desenho VentoinhasPainel).
+private struct ControleVentoinhasPainel: View {
+    @Environment(\.estilo) private var estilo
+    @Bindable var controle: ControleVentoinhas
+    let fans: [Ventoinha]
+    let sensores: LeituraSensores?
+    let editarCurva: () -> Void
+
+    private var a: AjustesVentoinhas { controle.ajustes }
+
+    /// Temperatura que manda (a do controle quando ele está rodando; senão, a da leitura do painel).
+    private var temp: Double? {
+        if a.modo != .automatico, let t = controle.temperatura { return t }
+        switch a.referencia {
+        case .cpu: return sensores?.cpuC
+        case .gpu: return sensores?.gpuC
+        case .maisQuente: return [sensores?.cpuC, sensores?.gpuC].compactMap { $0 }.max()
+        }
+    }
+
+    private var minimoPct: Double? {
+        let f = fans.compactMap { v -> Double? in
+            guard let mn = v.minimoRpm, let mx = v.maximoRpm, mx > 0 else { return nil }
+            return mn / mx * 100
+        }
+        return f.isEmpty ? nil : f.reduce(0, +) / Double(f.count)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SeletorModoVentoinhas(modo: $controle.ajustes.modo)
+            if a.modo != .automatico, controle.estado != .pronto, controle.estado != .naoUsado {
+                AvisoAjudante(estado: controle.estado, compacto: true, abrir: controle.abrirItensDeInicio)
+            }
+            switch a.modo {
+            case .automatico: automatico
+            case .manual: manual
+            case .curva: curva
+            }
+            if let e = controle.erro, a.modo != .automatico {
+                Text(e).font(.system(size: 12)).foregroundStyle(Color.quenteModulo).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var automatico: some View {
+        let paradas = fans.allSatisfy { $0.rpm < 1 }
+        let t = temp.map { " (\(Formato.temperatura($0, curta: false)))" } ?? ""
+        return HStack(spacing: 8) {
+            Circle().fill(Paleta.bom).frame(width: 7, height: 7)
+            Text("O macOS decide · " + (paradas ? "paradas, o Mac está frio" : "girando conforme a temperatura") + t)
+                .font(.system(size: 13)).foregroundStyle(Color.primary.opacity(0.75))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var manual: some View {
+        Cartao(padding: 14) {
+            VStack(alignment: .leading, spacing: 10) {
+                if a.separadas {
+                    ForEach(Array(fans.enumerated()), id: \.offset) { i, v in
+                        ControlePorcentagem(titulo: v.nome, pct: porVentoinha(i), compacto: true)
+                    }
+                } else {
+                    ControlePorcentagem(titulo: "As duas", pct: $controle.ajustes.manualPct)
+                }
+                HStack(spacing: 8) {
+                    ChaveFina(ligado: a.separadas) { controle.ajustes.separadas = $0 }
+                    Text("Ajustar cada ventoinha separada").font(.system(size: 13)).foregroundStyle(Color.primary.opacity(0.75))
+                }
+                rodapeSeguranca
+            }
+        }
+    }
+
+    private func porVentoinha(_ i: Int) -> Binding<Double> {
+        Binding(get: { i < a.manualPorVentoinha.count ? a.manualPorVentoinha[i] : a.manualPct },
+                set: { v in
+                    var lista = controle.ajustes.manualPorVentoinha
+                    while lista.count <= i { lista.append(controle.ajustes.manualPct) }
+                    lista[i] = v
+                    controle.ajustes.manualPorVentoinha = lista
+                })
+    }
+
+    private var curva: some View {
+        let pct = temp.map { AjustesVentoinhas.pct(curva: a.curva, temp: $0) }
+        return Cartao(padding: 14) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(a.perfil.titulo).font(.system(size: 14, weight: .semibold))
+                    Spacer(minLength: 6)
+                    Text("pela " + (a.referencia == .maisQuente ? "mais quente" : a.referencia.titulo))
+                        .font(.system(size: 12)).foregroundStyle(Color.primary.opacity(0.62))
+                }
+                // Clicar no gráfico abre o editor da curva nas Preferências.
+                Button(action: editarCurva) {
+                    GraficoCurva(pontos: a.curva, atual: temp.flatMap { t in pct.map { (t, $0) } }, limite: a.limite, minimoPct: minimoPct)
+                        .frame(height: 110)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Editar a curva")
+                .accessibilityLabel("Editar a curva nas Preferências")
+                HStack {
+                    Text("30 °C"); Spacer(); Text("65 °C"); Spacer(); Text("100 °C")
+                }
+                .font(.system(size: 11)).monospacedDigit().foregroundStyle(Color.primary.opacity(0.55))
+                if let t = temp, let p = pct {
+                    (Text("Agora: ") + Text("\(Formato.temperatura(t, curta: false)) → \(Formato.percentual(p))").bold().foregroundColor(estilo.destaqueTopo)
+                     + Text(descricao(p)))
+                        .font(.system(size: 13)).foregroundStyle(Color.primary.opacity(0.8))
+                }
+                Button(action: editarCurva) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "slider.horizontal.3").font(.system(size: 12, weight: .semibold))
+                        Text("Editar a curva").font(.system(size: 13, weight: .bold))
+                    }
+                    .foregroundStyle(estilo.primeiroPlanoSelecionado)
+                    .frame(maxWidth: .infinity).frame(height: 32)
+                    .background(FundoSelecionavel(selecionado: true, capsula: true))
+                }
+                .buttonStyle(.plain)
+                rodapeSeguranca
+            }
+        }
+    }
+
+    private func descricao(_ p: Double) -> String {
+        if controle.noLimite { return " · acima do limite, no máximo" }
+        if p < 0.5 { return " · o macOS decide" }
+        if let m = minimoPct, p < m { return " · giram no mínimo" }
+        return ""
+    }
+
+    private var rodapeSeguranca: some View {
+        Text("Acima de \(Formato.temperatura(a.limite, curta: false)) vai para o máximo. Se o app fechar, o macOS volta a decidir.")
+            .font(.system(size: 12)).foregroundStyle(Color.primary.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
     }
 }

@@ -26,6 +26,8 @@ struct AcoesModulo {
     /// Calendário: pede a permissão do sistema e avisa qual mês o painel mostra.
     var permitirCalendario: () -> Void = {}
     var mesCalendario: (Date) -> Void = { _ in }
+    /// Sensores: abre as Preferências das ventoinhas (editor da curva).
+    var ventoinhas: () -> Void = {}
 
     static var nenhuma: AcoesModulo { AcoesModulo() }
 }

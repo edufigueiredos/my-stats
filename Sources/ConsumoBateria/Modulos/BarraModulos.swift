@@ -310,6 +310,11 @@ final class ControladorModulos: NSObject, NSPopoverDelegate {
             self.popover.performClose(nil)
             self.abrirPreferencias(self.navegacao.tela.map { .modulo($0) } ?? .geral)
         }
+        a.ventoinhas = { [weak self] in
+            guard let self else { return }
+            self.popover.performClose(nil)
+            self.abrirPreferencias(.ventoinhas)
+        }
         a.visaoGeral = { [weak self] in self?.navegacao.tela = nil }
         a.abrirModulo = { [weak self] m in self?.navegacao.tela = m }
         a.abrirBateria = { [weak self] in

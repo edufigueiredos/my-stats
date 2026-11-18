@@ -153,6 +153,27 @@ enum FormatoData {
         return nome.components(separatedBy: "-").first ?? nome
     }
 
+    /// Partes da data para o Texto livre do Calendário: marcador → valor ("seg", "16", "nov", "2026"...).
+    static func partes(_ d: Date) -> [(marcador: String, valor: String)] {
+        let c = cal
+        let dia = c.component(.day, from: d), mes = c.component(.month, from: d), ano = c.component(.year, from: d)
+        return [
+            ("{semana}", diaSemanaCurto(d, c)),
+            ("{semanalonga}", diaSemana(d)),
+            ("{dia}", "\(dia)"),
+            ("{dia2}", String(format: "%02d", dia)),
+            ("{mes}", semPonto(c.shortMonthSymbols[mes - 1])),
+            ("{meslongo}", c.monthSymbols[mes - 1].lowercased()),
+            ("{mesnum}", String(format: "%02d", mes)),
+            ("{ano}", "\(ano)"),
+            ("{ano2}", String(format: "%02d", ano % 100)),
+        ]
+    }
+
+    /// Títulos dos botões das partes da data, na ordem de `partes`.
+    static let titulosPartes = ["Dia da semana", "Semana por extenso", "Dia", "Dia com 0", "Mês", "Mês por extenso",
+                                "Mês em número", "Ano", "Ano com 2 dígitos"]
+
     /// "sex 14 nov", para a barra.
     static func dataBarra(_ d: Date) -> String {
         let c = cal

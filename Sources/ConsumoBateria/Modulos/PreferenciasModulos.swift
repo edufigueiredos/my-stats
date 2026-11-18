@@ -147,6 +147,7 @@ struct PaginaModuloPrefs: View {
 
     @State private var selecao: SelecaoPecaModulo?
     @State private var linhaAlvo: LinhaPeca
+    private let abrirVentoinhas: () -> Void
     @State private var arrastandoPeca: ArrastoEditor?
     @State private var arrastandoModulo: Modulo?
     @State private var juntoAberto: Modulo?
@@ -157,7 +158,9 @@ struct PaginaModuloPrefs: View {
 
     init(modulo: Modulo, ajustes: Ajustes, ajustesModulos: AjustesModulos, leituras: LeiturasModulos, series: SeriesModulos,
          situacao: Situacao?, paraFoto: Bool, abrirModulo: @escaping (Modulo) -> Void = { _ in },
+         abrirVentoinhas: @escaping () -> Void = {},
          pecaSelecionadaInicial: (linha: LinhaPeca, peca: PecaModulo)? = nil) {
+        self.abrirVentoinhas = abrirVentoinhas
         self.modulo = modulo
         self.ajustes = ajustes
         self.ajustesModulos = ajustesModulos
@@ -382,6 +385,17 @@ struct PaginaModuloPrefs: View {
                                selecao: ajustesModulos.intervalo) { ajustesModulos.intervalo = $0 }
                         .frame(width: 170)
                 }
+            }
+            if modulo == .sensores {
+                Button(action: abrirVentoinhas) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "fan").font(.system(size: 13, weight: .semibold))
+                        Text("Controle das ventoinhas: Automático, Manual e Curva").font(.system(size: 13, weight: .semibold))
+                        Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold))
+                    }
+                    .foregroundStyle(estilo.destaqueTopo)
+                }
+                .buttonStyle(.plain)
             }
             HStack(spacing: 10) {
                 previaGrande(claro: false)
@@ -792,7 +806,7 @@ struct PaginaModuloPrefs: View {
                     .accessibilityLabel("Inserir \(m.titulo)")
                 }
             }
-            Text("Toque num valor para inserir no texto; escreva o que quiser em volta (ex.: \"CPU {valor} · {temp}\").")
+            Text("Toque num valor para inserir no texto; escreva o que quiser em volta (ex.: \"\(modulo == .calendario ? "{semana} {dia}/{mesnum}" : "CPU {valor} · {temp}")\").")
                 .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
     }

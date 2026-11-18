@@ -13,11 +13,17 @@ if [[ -z "${ASSINAR:-}" && "${1:-}" == "instalar" ]]; then
   ASSINAR="$(security find-identity -v -p codesigning 2>/dev/null | sed -n 's/.*"\(Developer ID Application:[^"]*\)".*/\1/p' | head -1)"
 fi
 ASSINAR="${ASSINAR:--}"
-swift build -c release
+swift build -c release   # app e ajudante das ventoinhas
 APP="build/$APP_NOME.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks"
 cp ".build/release/$NOME" "$APP/Contents/MacOS/$NOME"
+# Ajudante das ventoinhas (root, pelo launchd): binário ao lado do app e o plist que o SMAppService registra.
+AJUDANTE=MyStatsVentoinhas
+ROTULO_AJUDANTE=com.edufigueiredo.consumobateria.ventoinhas
+cp ".build/release/$AJUDANTE" "$APP/Contents/MacOS/$AJUDANTE"
+mkdir -p "$APP/Contents/Library/LaunchDaemons"
+cp "Recursos/$ROTULO_AJUDANTE.plist" "$APP/Contents/Library/LaunchDaemons/$ROTULO_AJUDANTE.plist"
 cp Info.plist "$APP/Contents/Info.plist"
 cp Recursos/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"   # gerado por scripts/gerar-icone.swift
 
@@ -34,6 +40,7 @@ if [[ "$ASSINAR" == "-" ]]; then OPCOES=(); else OPCOES=(--options runtime --tim
 codesign --force "${OPCOES[@]}" --sign "$ASSINAR" "$FW/Versions/B/Autoupdate"
 codesign --force "${OPCOES[@]}" --sign "$ASSINAR" "$FW/Versions/B/Updater.app"
 codesign --force "${OPCOES[@]}" --sign "$ASSINAR" "$FW"
+codesign --force "${OPCOES[@]}" --identifier "$ROTULO_AJUDANTE" --sign "$ASSINAR" "$APP/Contents/MacOS/$AJUDANTE"
 codesign --force "${OPCOES[@]}" --entitlements Recursos/MyStats.entitlements --sign "$ASSINAR" "$APP"   # acesso ao Calendário
 codesign --verify --strict "$APP"
 echo "Pronto: $APP"

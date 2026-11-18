@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Ajudante das ventoinhas (Sources/MyStatsVentoinhas), registrado pelo app com SMAppService.daemon. -->
+    <key>Label</key><string>com.edufigueiredo.consumobateria.ventoinhas</string>
+    <key>BundleProgram</key><string>Contents/MacOS/MyStatsVentoinhas</string>
+    <key>MachServices</key>
+    <dict>
+        <key>com.edufigueiredo.consumobateria.ventoinhas</key><true/>
+    </dict>
+    <key>AssociatedBundleIdentifiers</key>
+    <array><string>com.edufigueiredo.consumobateria</string></array>
+</dict>
+</plist>

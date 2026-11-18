@@ -5,6 +5,8 @@ import SwiftUI
 
 enum PaginaPreferencias: Hashable {
     case geral, bateria, modulo(Modulo), temas, avisos
+    /// Sensores › Ventoinhas (controle e curva); no menu fica sob Sensores.
+    case ventoinhas
 }
 
 @MainActor
@@ -25,6 +27,7 @@ struct PreferenciasComMenu: View {
     var abrirAoIniciar: Bool
     var alternarAbrirAoIniciar: (Bool) -> Void
     var paraFoto = false
+    var controleVentoinhas: ControleVentoinhas = .compartilhado
     /// Só para o --foto: peça já selecionada no editor do módulo.
     var pecaSelecionadaInicial: (linha: LinhaPeca, peca: PecaModulo)? = nil
 
@@ -54,7 +57,11 @@ struct PreferenciasComMenu: View {
             itemMenu("Geral", .geral)
             titulo("MÓDULOS")
             itemMenu("Bateria", .bateria)
-            ForEach(Modulo.allCases) { m in itemMenu(m.titulo, .modulo(m)) }
+            ForEach(Modulo.allCases) { m in
+                itemMenu(m.titulo, .modulo(m))
+                // O controle das ventoinhas tem página própria, logo abaixo de Sensores.
+                if m == .sensores { itemMenu("Ventoinhas", .ventoinhas, recuo: true) }
+            }
             titulo("APARÊNCIA")
             itemMenu("Temas", .temas)
             itemMenu("Avisos", .avisos)
@@ -74,11 +81,12 @@ struct PreferenciasComMenu: View {
             .padding(.horizontal, 10).padding(.top, 14).padding(.bottom, 6)
     }
 
-    private func itemMenu(_ nome: String, _ destino: PaginaPreferencias) -> some View {
+    private func itemMenu(_ nome: String, _ destino: PaginaPreferencias, recuo: Bool = false) -> some View {
         let sel = navegacao.pagina == destino
         return Button { navegacao.pagina = destino } label: {
             Text(nome)
-                .font(.system(size: 14, weight: sel ? .semibold : .regular))
+                .font(.system(size: recuo ? 13 : 14, weight: sel ? .semibold : .regular))
+                .padding(.leading, recuo ? 14 : 0)
                 .foregroundStyle(sel ? estilo.destaqueTopo : Color.primary.opacity(0.8))
                 .padding(.horizontal, 10).padding(.vertical, 8)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -99,10 +107,14 @@ struct PreferenciasComMenu: View {
         case .bateria: janela(.bateria)
         case .temas: janela(.temas)
         case .avisos: janela(.avisos)
+        case .ventoinhas:
+            PaginaVentoinhas(controle: controleVentoinhas, leituras: leituras, paraFoto: paraFoto,
+                             abrirSensores: { navegacao.pagina = .modulo(.sensores) })
         case .modulo(let m):
             PaginaModuloPrefs(modulo: m, ajustes: ajustes, ajustesModulos: ajustesModulos, leituras: leituras,
                               series: series, situacao: situacao, paraFoto: paraFoto,
                               abrirModulo: { navegacao.pagina = .modulo($0) },
+                              abrirVentoinhas: { navegacao.pagina = .ventoinhas },
                               pecaSelecionadaInicial: pecaSelecionadaInicial)
                 .id(m)
         }

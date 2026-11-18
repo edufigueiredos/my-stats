@@ -9,9 +9,19 @@ let package = Package(
         .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.0"),
     ],
     targets: [
+        // Protocolo entre o app e o ajudante das ventoinhas (docs/ventoinhas.md).
+        .target(name: "VentoinhasXPC"),
+        // Ajudante root que muda a rotação das ventoinhas no SMC; registrado pelo app com SMAppService.
+        .executableTarget(
+            name: "MyStatsVentoinhas",
+            dependencies: ["VentoinhasXPC"],
+            // Callbacks do NSXPC não são Sendable; o estado fica todo numa fila serial (Central.fila).
+            swiftSettings: [.swiftLanguageMode(.v5)],
+            linkerSettings: [.linkedFramework("IOKit")]
+        ),
         .executableTarget(
             name: "ConsumoBateria",
-            dependencies: [.product(name: "Sparkle", package: "Sparkle")],
+            dependencies: [.product(name: "Sparkle", package: "Sparkle"), "VentoinhasXPC"],
             linkerSettings: [
                 .linkedFramework("IOKit"),
                 .linkedFramework("ServiceManagement"),

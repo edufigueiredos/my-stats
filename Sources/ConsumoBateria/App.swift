@@ -43,6 +43,10 @@ enum Entrada {
             for v in r?.ventoinhas ?? [] {
                 print("\(v.nome): \(Formato.rpm(v.rpm)) · \(v.fracao.map { Formato.percentual($0 * 100) } ?? "—") (mín. \(v.minimoRpm.map(Formato.rpm) ?? "—"), máx. \(v.maximoRpm.map(Formato.rpm) ?? "—"))")
             }
+            if args.contains("--todas") {
+                print("Sensores HID: " + (r?.todas ?? []).map { String(format: "%@ %.1f", $0.nome, $0.valorC) }.joined(separator: " · "))
+                print("SMC T…: " + leitor.chavesSMC(prefixo: "T").map { String(format: "%@ %.1f", $0.chave, $0.watts) }.joined(separator: " · "))
+            }
             for (nome, prefixo) in [("Potências", "P"), ("Ventoinhas", "F")] {
                 print("\(nome) do SMC: " + leitor.chavesSMC(prefixo: prefixo).map { String(format: "%@ %.1f", $0.chave, $0.watts) }
                     .joined(separator: " · "))
@@ -179,11 +183,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             })
         barra?.definirVisivel(ajustesModulos.bateriaNaBarra)
         observarModulos()
+        ControleVentoinhas.compartilhado.iniciar()
     }
 
     func applicationWillTerminate(_ notificacao: Notification) {
         monitor?.salvar()
         monitorModulos?.gravarRedeAgora()
+        ControleVentoinhas.compartilhado.encerrar()
     }
 
     /// Mesma ideia de `observar()`, para os módulos: leitura, séries e ajustes que mudam a barra.

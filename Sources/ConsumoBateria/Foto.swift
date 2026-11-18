@@ -346,6 +346,15 @@ private extension Foto {
             PainelSensores(leituras: leituras, series: series, acoes: acoes,
                            avisoTitulo: "Avisar acima de 95 °C na CPU", avisoDica: "Por mais de 2 min seguidos. Muda nas Preferências.")
         }, "painel-sensores", em: url)
+        // Ventoinhas: os três modos (desenho VentoinhasPainel) com um controle que não mexe em nada.
+        for modo in [ModoVentoinhas.manual, .curva] {
+            var aj = AjustesVentoinhas()
+            aj.modo = modo
+            let c = ControleVentoinhas(persistir: false, vivo: false, ajustes: aj)
+            png(RaizTematica(temaFixo: .gold) {
+                PainelSensores(leituras: leituras, series: series, acoes: acoes, controle: c)
+            }, "painel-sensores-\(modo.rawValue)", em: url)
+        }
 
         // Altura do popover de um painel novo com limite de tela, como o teste do painel da bateria.
         let limite: CGFloat = 600
@@ -397,6 +406,24 @@ private extension Foto {
                                 alternarAbrirAoIniciar: { _ in }, paraFoto: true,
                                 pecaSelecionadaInicial: (.cima, .texto))
         }, "preferencias-modulos-texto-livre", em: url)
+        todos.atualizarConfig(.calendario) { c in
+            c.pecas = [ItemPecaModulo(.texto, texto: "{semanalonga}, {dia} de {meslongo}")]
+            c.pecasBaixo = []
+        }
+        png(RaizTematica(temaFixo: .gold) {
+            PreferenciasComMenu(ajustes: ajustesBateria, ajustesModulos: todos, navegacao: NavegacaoPreferencias(pagina: .modulo(.calendario)),
+                                leituras: leituras, series: series, situacao: .exemplo(.parado), abrirAoIniciar: true,
+                                alternarAbrirAoIniciar: { _ in }, paraFoto: true,
+                                pecaSelecionadaInicial: (.cima, .texto))
+        }, "preferencias-modulos-texto-livre-data", em: url)
+        var ajCurva = AjustesVentoinhas()
+        ajCurva.modo = .curva
+        png(RaizTematica(temaFixo: .gold) {
+            PreferenciasComMenu(ajustes: ajustesBateria, ajustesModulos: todos, navegacao: NavegacaoPreferencias(pagina: .ventoinhas),
+                                leituras: leituras, series: series, situacao: .exemplo(.parado), abrirAoIniciar: true,
+                                alternarAbrirAoIniciar: { _ in }, paraFoto: true,
+                                controleVentoinhas: ControleVentoinhas(persistir: false, vivo: false, ajustes: ajCurva))
+        }, "preferencias-ventoinhas", em: url)
     }
 }
 

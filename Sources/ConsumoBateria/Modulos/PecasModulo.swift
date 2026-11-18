@@ -605,14 +605,23 @@ enum TextoPecaModulo {
 
     /// Marcadores que o editor oferece no módulo, na ordem das peças dele.
     static func marcadores(_ m: Modulo) -> [(marcador: String, titulo: String)] {
-        PecaModulo.paleta(m).compactMap { p in
+        let pecas: [(marcador: String, titulo: String)] = PecaModulo.paleta(m).compactMap { p in
             marcadores.first(where: { $0.peca == p }).map { ($0.marcador, p.titulo(em: m)) }
         }
+        guard m == .calendario else { return pecas }
+        // No Calendário, a data também sai em partes, para montar do jeito que quiser ("{semanalonga}, {dia} de {meslongo}").
+        let partes = zip(FormatoData.partes(Date()).map(\.marcador), FormatoData.titulosPartes).map { ($0, $1) }
+        return pecas + partes
     }
 
     /// Troca os marcadores pelos valores atuais; marcador desconhecido fica como está.
     static func expandir(_ modelo: String, modulo m: Modulo, leituras l: LeiturasModulos, casas: Int?) -> String {
         var t = modelo
+        if t.contains("{") {
+            for (marcador, valor) in FormatoData.partes(l.data) where t.contains(marcador) {
+                t = t.replacingOccurrences(of: marcador, with: valor)
+            }
+        }
         for (marcador, peca) in marcadores where t.contains(marcador) {
             let valor = texto(ItemPecaModulo(peca, casas: casas), modulo: m, leituras: l) ?? Formato.semDado
             t = t.replacingOccurrences(of: marcador, with: valor)
