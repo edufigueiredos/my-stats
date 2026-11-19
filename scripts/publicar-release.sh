@@ -3,7 +3,8 @@
 #   1. Escreva as notas da versão em notas-da-versao.json ("0.3.0": ["frase curta", ...]).
 #   2. ./scripts/publicar-release.sh 0.3.0
 # Faz: sobe a versão no Info.plist, monta o app assinado com Developer ID, gera o DMG, notariza e carimba na Apple,
-# assina DMG e appcast com a chave EdDSA do Chaveiro (conta "my-stats" do Sparkle), commita, cria a tag e a release.
+# carimba também o app e gera o .zip que a atualização automática baixa (o DMG fica para quem baixa pelo site),
+# assina zip e appcast com a chave EdDSA do Chaveiro (conta "my-stats" do Sparkle), commita, cria a tag e a release.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 VERSAO="${1:?uso: scripts/publicar-release.sh <versão, ex. 0.3.0>}"
@@ -26,8 +27,9 @@ APP="build/My Stats.app"
 
 mkdir -p dist
 DMG="dist/My-Stats-$VERSAO.dmg"
+ZIP="dist/My-Stats-$VERSAO.zip"
 APPCAST="dist/appcast.xml"
-rm -f "$DMG" "$APPCAST"
+rm -f "$DMG" "$ZIP" "$APPCAST"
 PALCO="$(mktemp -d)"
 ditto "$APP" "$PALCO/My Stats.app"
 ln -s /Applications "$PALCO/Applications"
@@ -41,9 +43,15 @@ xcrun stapler staple "$DMG"
 xcrun stapler validate "$DMG"
 spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG"
 
+# Atualização pelo .zip, não pelo DMG: no macOS 27, o Sparkle montar o DMG faz o sistema oferecer "Instalar este app?"
+# e, com a imagem já ejetada, dizer "Não foi possível instalar". A notarização do DMG cobre o app, que é carimbado antes de zipar.
+xcrun stapler staple "$APP"
+xcrun stapler validate "$APP"
+ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
+
 # Na primeira vez o macOS pergunta se o sign_update pode usar a chave: "Permitir Sempre".
-SIG="$("$SPARKLE_BIN/sign_update" --account my-stats "$DMG")"
-python3 scripts/fazer-appcast.py "$APP/Contents/Info.plist" "$DMG" "$APPCAST" "$SIG"
+SIG="$("$SPARKLE_BIN/sign_update" --account my-stats "$ZIP")"
+python3 scripts/fazer-appcast.py "$APP/Contents/Info.plist" "$ZIP" "$APPCAST" "$SIG"
 "$SPARKLE_BIN/sign_update" --account my-stats "$APPCAST"
 "$SPARKLE_BIN/sign_update" --account my-stats --verify "$APPCAST"
 
@@ -52,6 +60,6 @@ git add Info.plist notas-da-versao.json
 git commit -q -m "Versão $VERSAO"
 git tag "v$VERSAO"
 git push -q origin HEAD "v$VERSAO"
-gh release create "v$VERSAO" "$DMG" "$APPCAST" --title "My Stats $VERSAO" \
+gh release create "v$VERSAO" "$DMG" "$ZIP" "$APPCAST" --title "My Stats $VERSAO" \
   --notes "$NOTAS"$'\n\n'"Baixe o \`My-Stats-$VERSAO.dmg\`, abra e arraste o My Stats para Aplicativos. Quem já tem o app recebe esta versão sozinho em até um dia (ou no clique direito na bateria > Procurar atualizações…)."
 echo "Publicada: https://github.com/edufigueiredos/my-stats/releases/tag/v$VERSAO"
