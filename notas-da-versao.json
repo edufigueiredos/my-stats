@@ -21,5 +21,11 @@
   "0.2.4": [
     "Texto livre em todos os módulos: escreva o que quiser na barra e toque nos valores de cada módulo para inseri-los (ex.: \"GPU {valor} · {temp} · {watts}\").",
     "Sensores: a \"Tela\" saiu da divisão de energia. O número era a potência que entra pelo carregador, não a da tela."
+  ],
+  "0.3.0": [
+    "Controle das ventoinhas (Preferências › Ventoinhas ou atalho no painel Sensores): Automático (o macOS decide), Manual (% para todas juntas ou para cada uma) e Curva (velocidade por temperatura, com perfis prontos ou o seu).",
+    "Segurança: acima do limite escolhido (padrão 95 °C) as ventoinhas vão ao máximo em qualquer modo, e se o app fechar elas voltam ao controle do macOS em poucos segundos.",
+    "Na primeira vez o macOS pede para aprovar o ajudante do My Stats em Ajustes › Geral › Itens de início; ele é que fala com as ventoinhas.",
+    "Calendário: o Texto livre agora monta a data por partes, como {semana}, {dia}, {mes} e {ano} (ex.: \"{semanalonga}, {dia} de {meslongo}\")."
   ]
 }
