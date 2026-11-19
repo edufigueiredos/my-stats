@@ -27,5 +27,9 @@
     "Segurança: acima do limite escolhido (padrão 95 °C) as ventoinhas vão ao máximo em qualquer modo, e se o app fechar elas voltam ao controle do macOS em poucos segundos.",
     "Na primeira vez o macOS pede para aprovar o ajudante do My Stats em Ajustes › Geral › Itens de início; ele é que fala com as ventoinhas.",
     "Calendário: o Texto livre agora monta a data por partes, como {semana}, {dia}, {mes} e {ano} (ex.: \"{semanalonga}, {dia} de {meslongo}\")."
+  ],
+  "0.3.1": [
+    "Atualização automática sem a janela \"Instalar este app?\" seguida de \"Não foi possível instalar\": o app passa a baixar a versão nova em .zip em vez de abrir o DMG.",
+    "As janelas de atualização agora aparecem em português."
   ]
 }
